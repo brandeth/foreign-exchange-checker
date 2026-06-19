@@ -96,21 +96,41 @@ const typePresets = [
           <p class="text-preset-4 text-fx-neutral-100">Reusable visual patterns for actions, inputs, and rate cards.</p>
         </div>
 
-        <div class="grid gap-4 lg:grid-cols-3">
-          <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
-            <h3 class="text-preset-3-bold">Buttons</h3>
-            <div class="flex flex-wrap gap-3">
-              <button class="text-preset-5-medium border border-fx-lime-500 bg-fx-lime-500 px-4 py-3 text-fx-neutral-900 transition hover:bg-fx-neutral-900 hover:text-fx-lime-500 focus:outline-2 focus:outline-offset-4 focus:outline-fx-lime-500">
-                Primary
-              </button>
-              <button class="text-preset-5-medium border border-fx-neutral-300 px-4 py-3 text-fx-neutral-50 transition hover:border-fx-lime-500 hover:text-fx-lime-500 focus:outline-2 focus:outline-offset-4 focus:outline-fx-lime-500">
-                Secondary
-              </button>
-              <button class="text-preset-5-medium border border-fx-neutral-500 bg-fx-neutral-600 px-4 py-3 text-fx-neutral-200" disabled>
-                Disabled
-              </button>
+        <article class="grid gap-6 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
+          <div class="grid gap-2">
+            <h3 class="text-preset-3-bold">Button Component</h3>
+            <p class="text-preset-5 text-fx-neutral-100">Slot content with native button states and attributes.</p>
+          </div>
+
+          <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Default</span>
+              <Button>Convert</Button>
             </div>
-          </article>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Long Label</span>
+              <Button>Check exchange rate</Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Focusable</span>
+              <Button aria-label="Refresh rates">Refresh Rates</Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Disabled</span>
+              <Button disabled>Unavailable</Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Clear</span>
+              <Button variant="clear">Clear All</Button>
+            </div>
+          </div>
+        </article>
+
+        <div class="grid gap-4 lg:grid-cols-2">
 
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
             <h3 class="text-preset-3-bold">Fields</h3>
