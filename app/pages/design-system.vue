@@ -102,7 +102,7 @@ const typePresets = [
             <p class="text-preset-5 text-fx-neutral-100">Slot content with native button states and attributes.</p>
           </div>
 
-          <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
             <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
               <span class="text-preset-6 uppercase text-fx-neutral-200">Default</span>
               <Button>Convert</Button>
@@ -121,6 +121,11 @@ const typePresets = [
             <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
               <span class="text-preset-6 uppercase text-fx-neutral-200">Disabled</span>
               <Button disabled>Unavailable</Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Clear</span>
+              <Button variant="clear">Clear All</Button>
             </div>
           </div>
         </article>
