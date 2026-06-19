@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import starFilledIcon from '~/assets/images/star-filled.svg'
+import starIcon from '~/assets/images/star.svg'
+
 const colors = [
   { name: 'Neutral 900', className: 'bg-fx-neutral-900', value: '#0A0A0A', text: 'text-fx-neutral-50' },
   { name: 'Neutral 700', className: 'bg-fx-neutral-700', value: '#171719', text: 'text-fx-neutral-50' },
@@ -102,10 +105,26 @@ const typePresets = [
             <p class="text-preset-5 text-fx-neutral-100">Slot content with native button states and attributes.</p>
           </div>
 
-          <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+          <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
               <span class="text-preset-6 uppercase text-fx-neutral-200">Default</span>
               <Button>Convert</Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Favorite</span>
+              <Button variant="favorite" :pressed="false" aria-label="Add USD to SGD to favorites">
+                <img :src="starIcon" alt="" class="size-4 shrink-0">
+                Favorite
+              </Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Favorited</span>
+              <Button variant="favorite" pressed aria-label="Remove USD to SGD from favorites">
+                <img :src="starFilledIcon" alt="" class="size-5 shrink-0">
+                Favorited
+              </Button>
             </div>
 
             <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
