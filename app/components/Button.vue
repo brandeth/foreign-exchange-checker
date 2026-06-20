@@ -1,9 +1,11 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
   variant?: 'default' | 'clear' | 'favorite'
+  iconOnly?: boolean
   pressed?: boolean
 }>(), {
   variant: 'default',
+  iconOnly: false,
   pressed: undefined,
 })
 </script>
@@ -13,7 +15,10 @@ withDefaults(defineProps<{
     class="fx-button"
     :class="[
       `fx-button--${variant}`,
-      { 'fx-button--pressed': pressed },
+      {
+        'fx-button--icon-only': iconOnly,
+        'fx-button--pressed': pressed,
+      },
     ]"
     :aria-pressed="pressed === undefined ? undefined : String(pressed)"
     type="button"
@@ -27,6 +32,10 @@ withDefaults(defineProps<{
 
 .fx-button {
   @apply inline-flex h-8 w-fit items-center justify-center gap-2 rounded-lg border px-3 py-2 text-preset-5-medium transition-colors duration-200 ease-in-out focus-visible:bg-fx-neutral-700 focus-visible:outline-none disabled:border-fx-neutral-300 disabled:bg-transparent disabled:text-fx-neutral-200 disabled:hover:bg-transparent disabled:active:bg-transparent disabled:active:text-fx-neutral-200;
+}
+
+.fx-button--icon-only {
+  @apply size-8 gap-0 p-0;
 }
 
 .fx-button :deep(img),
@@ -54,9 +63,25 @@ withDefaults(defineProps<{
   filter: brightness(0) saturate(100%);
 }
 
+.fx-button--favorite.fx-button--icon-only.fx-button--pressed {
+  @apply bg-fx-neutral-600 text-fx-lime-500 hover:bg-fx-neutral-500 active:bg-fx-neutral-600 active:text-fx-lime-500;
+}
+
+.fx-button--favorite.fx-button--icon-only.fx-button--pressed :deep(img) {
+  filter: none;
+}
+
 .fx-button:focus-visible {
   box-shadow:
     0 0 0 3px var(--color-fx-neutral-700),
     0 0 0 4px var(--color-fx-lime-500);
+}
+
+.fx-button--icon-only:not(.fx-button--pressed):focus-visible {
+  @apply bg-fx-neutral-600;
+}
+
+.fx-button--favorite.fx-button--icon-only.fx-button--pressed:focus-visible {
+  @apply border-fx-neutral-500 bg-fx-neutral-500;
 }
 </style>

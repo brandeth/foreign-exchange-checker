@@ -128,6 +128,20 @@ const typePresets = [
             </div>
 
             <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Icon Only</span>
+              <Button icon-only variant="clear" aria-label="Add USD to SGD to favorites">
+                <img :src="starIcon" alt="">
+              </Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Icon Only Pinned</span>
+              <Button icon-only variant="favorite" pressed aria-label="Remove USD to SGD from favorites">
+                <img :src="starFilledIcon" alt="">
+              </Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
               <span class="text-preset-6 uppercase text-fx-neutral-200">Long Label</span>
               <Button>Check exchange rate</Button>
             </div>
