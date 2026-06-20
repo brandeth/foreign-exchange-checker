@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import deleteIcon from '~/assets/images/delete.svg'
 import exchangeIcon from '~/assets/images/exchange-icon.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import starIcon from '~/assets/images/star.svg'
@@ -146,6 +147,13 @@ const typePresets = [
               <span class="text-preset-6 uppercase text-fx-neutral-200">Exchange</span>
               <Button icon-only variant="exchange" aria-label="Swap currencies">
                 <img :src="exchangeIcon" alt="">
+              </Button>
+            </div>
+
+            <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
+              <span class="text-preset-6 uppercase text-fx-neutral-200">Delete</span>
+              <Button icon-only variant="delete" aria-label="Delete currency pair">
+                <img :src="deleteIcon" alt="">
               </Button>
             </div>
 

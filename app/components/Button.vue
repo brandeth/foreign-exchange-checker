@@ -1,6 +1,6 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  variant?: 'default' | 'clear' | 'favorite' | 'exchange'
+  variant?: 'default' | 'clear' | 'favorite' | 'exchange' | 'delete'
   iconOnly?: boolean
   pressed?: boolean
 }>(), {
@@ -59,8 +59,21 @@ withDefaults(defineProps<{
   @apply h-12 border-fx-neutral-500 bg-fx-neutral-600 text-fx-neutral-50 hover:bg-fx-neutral-500 active:bg-fx-neutral-400 active:text-fx-neutral-50;
 }
 
+.fx-button--delete {
+  @apply border-fx-neutral-500 bg-fx-neutral-600 text-fx-neutral-50 hover:bg-fx-neutral-500 active:bg-fx-neutral-400 active:text-fx-neutral-50;
+}
+
 .fx-button--exchange.fx-button--icon-only {
   @apply size-12;
+}
+
+.fx-button--delete.fx-button--icon-only {
+  @apply h-auto w-fit p-2;
+}
+
+.fx-button--delete :deep(img),
+.fx-button--delete :deep(svg) {
+  @apply size-4;
 }
 
 .fx-button--favorite.fx-button--pressed {
