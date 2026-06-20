@@ -1,6 +1,6 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  variant?: 'default' | 'clear' | 'favorite'
+  variant?: 'default' | 'clear' | 'favorite' | 'exchange'
   iconOnly?: boolean
   pressed?: boolean
 }>(), {
@@ -53,6 +53,14 @@ withDefaults(defineProps<{
 
 .fx-button--favorite {
   @apply border-fx-lime-500 bg-transparent text-fx-neutral-50 hover:bg-fx-lime-800 active:bg-fx-lime-500 active:text-fx-neutral-900;
+}
+
+.fx-button--exchange {
+  @apply h-12 border-fx-neutral-500 bg-fx-neutral-600 text-fx-neutral-50 hover:bg-fx-neutral-500 active:bg-fx-neutral-400 active:text-fx-neutral-50;
+}
+
+.fx-button--exchange.fx-button--icon-only {
+  @apply size-12;
 }
 
 .fx-button--favorite.fx-button--pressed {
