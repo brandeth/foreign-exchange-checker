@@ -2,6 +2,7 @@
 import deleteIcon from '~/assets/images/delete.svg'
 import deleteFilledIcon from '~/assets/images/delete-filled.svg'
 import exchangeIcon from '~/assets/images/exchange-icon.svg'
+import searchIcon from '~/assets/images/search.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import starIcon from '~/assets/images/star.svg'
 
@@ -188,11 +189,12 @@ const typePresets = [
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
             <h3 class="text-preset-3-bold">Fields</h3>
             <label class="grid gap-2">
-              <span class="text-preset-5-medium uppercase text-fx-neutral-100">Amount</span>
-              <input
-                value="1000.00"
-                class="text-preset-3-medium w-full border border-fx-neutral-300 bg-fx-neutral-900 px-4 py-3 text-fx-neutral-50 outline-none transition focus:border-fx-lime-500 focus:ring-2 focus:ring-fx-lime-500/35"
-              >
+              <span class="text-preset-5-medium uppercase text-fx-neutral-100">Search</span>
+              <Input placeholder="Search currencies...">
+                <template #icon>
+                  <img :src="searchIcon" alt="">
+                </template>
+              </Input>
             </label>
             <label class="grid gap-2">
               <span class="text-preset-5-medium uppercase text-fx-neutral-100">Currency Pair</span>
