@@ -60,7 +60,7 @@ withDefaults(defineProps<{
 }
 
 .fx-button--delete {
-  @apply border-fx-neutral-500 bg-fx-neutral-600 text-fx-neutral-50 hover:bg-fx-neutral-500 active:bg-fx-neutral-400 active:text-fx-neutral-50;
+  @apply border-fx-neutral-500 bg-fx-neutral-600 text-fx-neutral-50 hover:border-fx-neutral-400 hover:bg-fx-neutral-500 active:bg-fx-neutral-400 active:text-fx-neutral-50;
 }
 
 .fx-button--exchange.fx-button--icon-only {
@@ -74,6 +74,26 @@ withDefaults(defineProps<{
 .fx-button--delete :deep(img),
 .fx-button--delete :deep(svg) {
   @apply size-4;
+}
+
+.fx-button :deep(.fx-button__icon-stack) {
+  @apply relative inline-grid size-4 shrink-0;
+}
+
+.fx-button :deep(.fx-button__icon-stack > img) {
+  @apply col-start-1 row-start-1 size-full transition-opacity duration-200 ease-in-out;
+}
+
+.fx-button :deep(.fx-button__icon-hover) {
+  @apply opacity-0;
+}
+
+.fx-button--delete:not(:disabled):hover :deep(.fx-button__icon-default) {
+  @apply opacity-0;
+}
+
+.fx-button--delete:not(:disabled):hover :deep(.fx-button__icon-hover) {
+  @apply opacity-100;
 }
 
 .fx-button--favorite.fx-button--pressed {

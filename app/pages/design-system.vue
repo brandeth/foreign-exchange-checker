@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import deleteIcon from '~/assets/images/delete.svg'
+import deleteFilledIcon from '~/assets/images/delete-filled.svg'
 import exchangeIcon from '~/assets/images/exchange-icon.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import starIcon from '~/assets/images/star.svg'
@@ -153,7 +154,10 @@ const typePresets = [
             <div class="grid min-h-24 content-start gap-3 border border-fx-neutral-400 bg-fx-neutral-900 p-4">
               <span class="text-preset-6 uppercase text-fx-neutral-200">Delete</span>
               <Button icon-only variant="delete" aria-label="Delete currency pair">
-                <img :src="deleteIcon" alt="">
+                <span class="fx-button__icon-stack" aria-hidden="true">
+                  <img :src="deleteIcon" alt="" class="fx-button__icon-default">
+                  <img :src="deleteFilledIcon" alt="" class="fx-button__icon-hover">
+                </span>
               </Button>
             </div>
 
