@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import LiveRate from '~/components/LiveRate.vue'
 
 type LiveMarketRate = {
@@ -28,17 +28,100 @@ const props = withDefaults(defineProps<{
 
 const displayRates = computed(() => props.rates ?? defaultRates)
 const rateGroups = computed(() => props.marquee ? [displayRates.value, displayRates.value] : [displayRates.value])
+const marketBar = ref<HTMLElement | null>(null)
+const track = ref<HTMLElement | null>(null)
+const marqueeOffset = ref(0)
+
+let animationFrame = 0
+let lastFrameTime = 0
+let baseSpeed = 0
+let currentSpeedMultiplier = 1
+let targetSpeedMultiplier = 1
+let reduceMotion = false
+let resizeObserver: ResizeObserver | undefined
+
+const trackStyle = computed(() => props.marquee
+  ? { transform: `translateX(${-marqueeOffset.value}px)` }
+  : undefined,
+)
+
+function measureMarquee() {
+  const marqueeWidth = (track.value?.scrollWidth ?? 0) / 2
+
+  baseSpeed = marqueeWidth / 34000
+
+  if (marqueeWidth > 0 && marqueeOffset.value >= marqueeWidth)
+    marqueeOffset.value %= marqueeWidth
+}
+
+function updateMarquee(time: number) {
+  if (!lastFrameTime)
+    lastFrameTime = time
+
+  const elapsed = time - lastFrameTime
+  lastFrameTime = time
+  targetSpeedMultiplier = marketBar.value?.matches(':hover') ? 0 : 1
+  currentSpeedMultiplier += (targetSpeedMultiplier - currentSpeedMultiplier) * Math.min(elapsed / 500, 1)
+
+  if (Math.abs(targetSpeedMultiplier - currentSpeedMultiplier) < 0.001)
+    currentSpeedMultiplier = targetSpeedMultiplier
+
+  const marqueeWidth = (track.value?.scrollWidth ?? 0) / 2
+
+  if (marqueeWidth > 0 && baseSpeed > 0) {
+    marqueeOffset.value = (marqueeOffset.value + baseSpeed * currentSpeedMultiplier * elapsed) % marqueeWidth
+  }
+
+  animationFrame = requestAnimationFrame(updateMarquee)
+}
+
+function startMarqueeLoop() {
+  cancelAnimationFrame(animationFrame)
+  lastFrameTime = 0
+  measureMarquee()
+
+  if (props.marquee && !reduceMotion)
+    animationFrame = requestAnimationFrame(updateMarquee)
+}
+
+function setMarqueeTargetSpeed(speed: number) {
+  targetSpeedMultiplier = speed
+}
+
+onMounted(() => {
+  reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  resizeObserver = new ResizeObserver(measureMarquee)
+
+  if (track.value) {
+    resizeObserver.observe(track.value)
+  }
+
+  nextTick(startMarqueeLoop)
+})
+
+watch(() => props.marquee, startMarqueeLoop)
+
+onBeforeUnmount(() => {
+  cancelAnimationFrame(animationFrame)
+  resizeObserver?.disconnect()
+})
 </script>
 
 <template>
-  <section class="live-markets" aria-label="Live markets">
+  <section
+    ref="marketBar"
+    class="live-markets"
+    aria-label="Live markets"
+    @mouseenter="setMarqueeTargetSpeed(0)"
+    @mouseleave="setMarqueeTargetSpeed(1)"
+  >
     <div class="live-markets__label">
       <span class="live-markets__dot" aria-hidden="true" />
       <span>Live Markets</span>
     </div>
 
     <div class="live-markets__viewport">
-      <div class="live-markets__track" :class="{ 'live-markets__track--marquee': marquee }">
+      <div ref="track" class="live-markets__track" :style="trackStyle">
         <div
           v-for="(group, groupIndex) in rateGroups"
           :key="groupIndex"
@@ -63,7 +146,7 @@ const rateGroups = computed(() => props.marquee ? [displayRates.value, displayRa
 @reference "~/assets/css/main.css";
 
 .live-markets {
-  @apply flex h-10 overflow-hidden bg-fx-neutral-700;
+  @apply flex h-10 w-full min-w-0 overflow-hidden bg-fx-neutral-700;
 }
 
 .live-markets__label {
@@ -86,27 +169,4 @@ const rateGroups = computed(() => props.marquee ? [displayRates.value, displayRa
   @apply flex h-full shrink-0;
 }
 
-.live-markets__track--marquee {
-  animation: live-markets-marquee 34s linear infinite;
-}
-
-.live-markets__viewport:hover .live-markets__track--marquee {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .live-markets__track--marquee {
-    animation: none;
-  }
-}
-
-@keyframes live-markets-marquee {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(-50%);
-  }
-}
 </style>

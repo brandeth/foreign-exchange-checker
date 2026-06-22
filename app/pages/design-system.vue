@@ -238,7 +238,7 @@ const typePresets = [
           </article>
         </div>
 
-        <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
+        <article class="flex min-w-0 flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
           <h3 class="text-preset-3-bold">Live Markets</h3>
           <LiveMarkets :marquee="false" />
         </article>
