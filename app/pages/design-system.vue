@@ -208,25 +208,13 @@ const typePresets = [
 
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
             <h3 class="text-preset-3-bold">Rate Card</h3>
-            <div class="grid gap-4 border border-fx-lime-800 bg-fx-neutral-900 p-4">
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <p class="text-preset-5-medium uppercase text-fx-neutral-100">USD to SGD</p>
-                  <p class="text-preset-1-tablet text-fx-neutral-50">1.2847</p>
-                </div>
-                <span class="text-preset-6 bg-fx-green-500 px-2 py-1 text-fx-neutral-900">+0.18%</span>
-              </div>
-              <div class="grid grid-cols-2 gap-3 border-t border-fx-neutral-400 pt-4">
-                <div>
-                  <p class="text-preset-6 uppercase text-fx-neutral-200">Spread</p>
-                  <p class="text-preset-4 text-fx-neutral-50">0.0041</p>
-                </div>
-                <div>
-                  <p class="text-preset-6 uppercase text-fx-neutral-200">Fee</p>
-                  <p class="text-preset-4 text-fx-neutral-50">2.50 SGD</p>
-                </div>
-              </div>
-            </div>
+            <RateCard
+              title="USD to SGD"
+              rate="1.2847"
+              change="+0.18%"
+              spread="0.0041"
+              fee="2.50 SGD"
+            />
           </article>
 
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
