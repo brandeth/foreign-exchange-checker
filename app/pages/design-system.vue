@@ -228,7 +228,20 @@ const typePresets = [
               </div>
             </div>
           </article>
+
+          <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
+            <h3 class="text-preset-3-bold">Live Rates</h3>
+            <div class="grid gap-4 overflow-hidden border border-fx-neutral-500 bg-fx-neutral-900 p-4">
+              <LiveRate pair="EUR/GBP" rate="0.8595" change="0.67%" direction="down" />
+              <LiveRate pair="USD/JPY" rate="157.91" change="+0.04%" direction="up" />
+            </div>
+          </article>
         </div>
+
+        <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
+          <h3 class="text-preset-3-bold">Live Markets</h3>
+          <LiveMarkets :marquee="false" />
+        </article>
       </section>
     </div>
   </main>
