@@ -6,6 +6,15 @@ import searchIcon from '~/assets/images/search.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import starIcon from '~/assets/images/star.svg'
 
+const activeTab = ref('history')
+
+const tabs = [
+  { label: 'History', value: 'history' },
+  { label: 'Compare', value: 'compare' },
+  { label: 'Favorites', value: 'favorites', badge: 10 },
+  { label: 'Log', value: 'log', badge: 8 },
+]
+
 const colors = [
   { name: 'Neutral 900', className: 'bg-fx-neutral-900', value: '#0A0A0A', text: 'text-fx-neutral-50' },
   { name: 'Neutral 700', className: 'bg-fx-neutral-700', value: '#171719', text: 'text-fx-neutral-50' },
@@ -100,7 +109,7 @@ const typePresets = [
       <section class="grid gap-4">
         <div class="flex flex-col gap-2">
           <h2 class="text-preset-2-bold">Component Samples</h2>
-          <p class="text-preset-4 text-fx-neutral-100">Reusable visual patterns for actions, inputs, and rate cards.</p>
+          <p class="text-preset-4 text-fx-neutral-100">Reusable visual patterns for actions, navigation, inputs, and rate cards.</p>
         </div>
 
         <article class="grid gap-6 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
@@ -181,6 +190,17 @@ const typePresets = [
               <span class="text-preset-6 uppercase text-fx-neutral-200">Clear</span>
               <Button variant="clear">Clear All</Button>
             </div>
+          </div>
+        </article>
+
+        <article class="grid gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
+          <div class="grid gap-2">
+            <h3 class="text-preset-3-bold">Tabs</h3>
+            <p class="text-preset-5 text-fx-neutral-100">Selectable tabs with optional numeric badges and keyboard navigation.</p>
+          </div>
+
+          <div class="overflow-hidden bg-fx-neutral-900">
+            <Tabs v-model="activeTab" :tabs="tabs" aria-label="Exchange views" />
           </div>
         </article>
 
