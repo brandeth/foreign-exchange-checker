@@ -237,6 +237,11 @@ const typePresets = [
           <h3 class="text-preset-3-bold">Live Markets</h3>
           <LiveMarkets :marquee="false" />
         </article>
+
+        <article class="grid gap-5 border border-fx-neutral-400 bg-fx-neutral-900 p-5">
+          <h3 class="text-preset-3-bold">Check Rate</h3>
+          <CheckRate />
+        </article>
       </section>
     </div>
   </main>
