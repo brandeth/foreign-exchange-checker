@@ -16,6 +16,12 @@ type Currency = {
   flag: string
 }
 
+const props = withDefaults(defineProps<{
+  initialCurrency?: string
+}>(), {
+  initialCurrency: 'USD',
+})
+
 const popularCurrencies: Currency[] = [
   { code: 'USD', name: 'US Dollar', flag: usFlag },
   { code: 'EUR', name: 'Euro', flag: euFlag },
@@ -29,9 +35,12 @@ const otherCurrencies: Currency[] = [
   { code: 'BDT', name: 'Bangladeshi Taka', flag: bdFlag },
 ]
 
+const currencies = [...popularCurrencies, ...otherCurrencies]
 const isOpen = ref(false)
 const searchQuery = ref('')
-const selectedCurrency = ref(popularCurrencies[0])
+const selectedCurrency = ref(
+  currencies.find(currency => currency.code === props.initialCurrency) ?? popularCurrencies[0],
+)
 const triggerRef = ref<HTMLButtonElement | null>(null)
 const menuRef = ref<HTMLDivElement | null>(null)
 const menuPosition = ref({
