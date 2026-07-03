@@ -5,6 +5,7 @@ import exchangeIcon from '~/assets/images/exchange-icon.svg'
 import searchIcon from '~/assets/images/search.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import starIcon from '~/assets/images/star.svg'
+import RateMetricCard from '~/components/RateMetricCard.vue'
 
 const activeTab = ref('history')
 
@@ -235,6 +236,16 @@ const typePresets = [
               spread="0.0041"
               fee="2.50 SGD"
             />
+          </article>
+
+          <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5 lg:col-span-2">
+            <h3 class="text-preset-3-bold">Rate Metric Cards</h3>
+            <div class="flex flex-wrap gap-4 bg-fx-neutral-900 p-4">
+              <RateMetricCard label="Open" value="0.8516" />
+              <RateMetricCard label="Last" value="0.8530" />
+              <RateMetricCard label="Change" value="+0.0014" increase />
+              <RateMetricCard label="% Change" value="+0.16%" increase show-indicator />
+            </div>
           </article>
 
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
