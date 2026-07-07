@@ -5,15 +5,54 @@ import exchangeIcon from '~/assets/images/exchange-icon.svg'
 import searchIcon from '~/assets/images/search.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import starIcon from '~/assets/images/star.svg'
+import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
+import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
 
 const activeTab = ref('history')
+const selectedTimeRange = ref('1m')
+
+const rateChartValues = [
+  0.8543, 0.8546, 0.8558, 0.8569, 0.8575, 0.8562, 0.8547, 0.8550, 0.8548, 0.8535,
+  0.8535, 0.8521, 0.8526, 0.8524, 0.8527, 0.8531, 0.8537, 0.8533, 0.8538, 0.8552,
+  0.8550, 0.8565, 0.8558, 0.8543, 0.8539, 0.8532, 0.8537, 0.8525, 0.8521, 0.8524,
+  0.8519, 0.8526, 0.8509, 0.8524, 0.8501, 0.8508, 0.8509, 0.8511, 0.8510, 0.8518,
+  0.8509, 0.8509, 0.8502, 0.8493, 0.8504, 0.8516, 0.8531, 0.8523, 0.8510, 0.8505,
+  0.8494, 0.8489, 0.8502, 0.8492, 0.8505, 0.8496, 0.8498, 0.8484, 0.8490, 0.8482,
+  0.8488, 0.8491, 0.8504, 0.8498, 0.8505, 0.8501, 0.8511, 0.8528, 0.8519, 0.8542,
+  0.8555, 0.8556, 0.8562, 0.8565, 0.8570, 0.8567, 0.8591, 0.8597, 0.8568, 0.8545,
+  0.8547, 0.8532, 0.8520, 0.8517, 0.8538, 0.8546, 0.8540, 0.8568, 0.8569, 0.8582,
+  0.8590, 0.8570, 0.8583, 0.8598, 0.8596, 0.8581, 0.8580, 0.8578, 0.8584, 0.8576,
+  0.8573, 0.8556, 0.8560, 0.8571, 0.8590,
+]
+
+const rateChartPoints = rateChartValues.map((value, index) => ({
+  label: index === 0 ? 'Apr 14' : index === rateChartValues.length - 1 ? 'May 14' : `Point ${index + 1}`,
+  value,
+}))
+
+const rateChartXTicks = [
+  { label: 'Apr 14', index: 0 },
+  { label: 'Apr 21', index: 26 },
+  { label: 'Apr 28', index: 52 },
+  { label: 'May 06', index: 78 },
+  { label: 'May 14', index: rateChartValues.length - 1 },
+]
 
 const tabs = [
   { label: 'History', value: 'history' },
   { label: 'Compare', value: 'compare' },
   { label: 'Favorites', value: 'favorites', badge: 10 },
   { label: 'Log', value: 'log', badge: 8 },
+]
+
+const timeRanges = [
+  { label: '1D', value: '1d' },
+  { label: '1W', value: '1w' },
+  { label: '1M', value: '1m' },
+  { label: '3M', value: '3m' },
+  { label: '1Y', value: '1y' },
+  { label: '5Y', value: '5y' },
 ]
 
 const colors = [
@@ -240,12 +279,33 @@ const typePresets = [
 
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5 lg:col-span-2">
             <h3 class="text-preset-3-bold">Rate Metric Cards</h3>
-            <div class="flex flex-wrap gap-4 bg-fx-neutral-900 p-4">
-              <RateMetricCard label="Open" value="0.8516" />
-              <RateMetricCard label="Last" value="0.8530" />
-              <RateMetricCard label="Change" value="+0.0014" increase />
-              <RateMetricCard label="% Change" value="+0.16%" increase show-indicator />
+            <div class="grid gap-6 bg-fx-neutral-900 p-4 xl:grid-cols-[1fr_auto] xl:items-center">
+              <div class="flex flex-wrap gap-4">
+                <RateMetricCard label="Open" value="0.8516" />
+                <RateMetricCard label="Last" value="0.8530" />
+                <RateMetricCard label="Change" value="+0.0014" increase />
+                <RateMetricCard label="% Change" value="+0.16%" increase show-indicator />
+              </div>
+              <TimeRangeSelector
+                v-model="selectedTimeRange"
+                :options="timeRanges"
+                aria-label="Chart time range"
+              />
             </div>
+          </article>
+
+          <article class="flex min-w-0 flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5 lg:col-span-2">
+            <h3 class="text-preset-3-bold">Rate Chart Card</h3>
+            <RateChartCard
+              pair="USD/EUR"
+              value="0.8530"
+              timestamp="May 14 16:00 CET"
+              :points="rateChartPoints"
+              :x-ticks="rateChartXTicks"
+              :y-ticks="[0.8612, 0.8516, 0.8421]"
+              :min-value="0.8421"
+              :max-value="0.8612"
+            />
           </article>
 
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
