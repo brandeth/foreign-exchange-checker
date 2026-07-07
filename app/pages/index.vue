@@ -1,7 +1,99 @@
+<script setup lang="ts">
+import RateChartCard from '~/components/RateChartCard.vue'
+import RateMetricCard from '~/components/RateMetricCard.vue'
+import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
+
+const activeMarketTab = ref('history')
+const selectedTimeRange = ref('1m')
+
+const marketTabs = [
+  { label: 'History', value: 'history' },
+  { label: 'Compare', value: 'compare' },
+  { label: 'Favorites', value: 'favorites', badge: 10 },
+  { label: 'Log', value: 'log', badge: 8 },
+]
+
+const timeRanges = [
+  { label: '1D', value: '1d' },
+  { label: '1W', value: '1w' },
+  { label: '1M', value: '1m' },
+  { label: '3M', value: '3m' },
+  { label: '1Y', value: '1y' },
+  { label: '5Y', value: '5y' },
+]
+
+const rateChartValues = [
+  0.8543, 0.8546, 0.8558, 0.8569, 0.8575, 0.8562, 0.8547, 0.8550, 0.8548, 0.8535,
+  0.8535, 0.8521, 0.8526, 0.8524, 0.8527, 0.8531, 0.8537, 0.8533, 0.8538, 0.8552,
+  0.8550, 0.8565, 0.8558, 0.8543, 0.8539, 0.8532, 0.8537, 0.8525, 0.8521, 0.8524,
+  0.8519, 0.8526, 0.8509, 0.8524, 0.8501, 0.8508, 0.8509, 0.8511, 0.8510, 0.8518,
+  0.8509, 0.8509, 0.8502, 0.8493, 0.8504, 0.8516, 0.8531, 0.8523, 0.8510, 0.8505,
+  0.8494, 0.8489, 0.8502, 0.8492, 0.8505, 0.8496, 0.8498, 0.8484, 0.8490, 0.8482,
+  0.8488, 0.8491, 0.8504, 0.8498, 0.8505, 0.8501, 0.8511, 0.8528, 0.8519, 0.8542,
+  0.8555, 0.8556, 0.8562, 0.8565, 0.8570, 0.8567, 0.8591, 0.8597, 0.8568, 0.8545,
+  0.8547, 0.8532, 0.8520, 0.8517, 0.8538, 0.8546, 0.8540, 0.8568, 0.8569, 0.8582,
+  0.8590, 0.8570, 0.8583, 0.8598, 0.8596, 0.8581, 0.8580, 0.8578, 0.8584, 0.8576,
+  0.8573, 0.8556, 0.8560, 0.8571, 0.8590,
+]
+
+const rateChartPoints = rateChartValues.map((value, index) => ({
+  label: index === 0 ? 'Apr 14' : index === rateChartValues.length - 1 ? 'May 14' : `Point ${index + 1}`,
+  value,
+}))
+
+const rateChartXTicks = [
+  { label: 'Apr 14', index: 0 },
+  { label: 'Apr 21', index: 26 },
+  { label: 'Apr 28', index: 52 },
+  { label: 'May 06', index: 78 },
+  { label: 'May 14', index: rateChartValues.length - 1 },
+]
+</script>
+
 <template>
   <main class="min-h-screen bg-fx-neutral-900 px-6 py-9 text-fx-neutral-50">
     <div class="mx-auto flex max-w-[1036px] flex-col gap-12">
       <CheckRate />
+
+      <section class="market-history" aria-label="Exchange market views">
+        <Tabs
+          v-model="activeMarketTab"
+          :tabs="marketTabs"
+          aria-label="Exchange market views"
+        />
+
+        <div v-if="activeMarketTab === 'history'" class="market-history__history">
+          <div class="market-history__summary">
+            <div class="market-history__metrics">
+              <RateMetricCard label="Open" value="0.8516" />
+              <RateMetricCard label="Last" value="0.8530" />
+              <RateMetricCard label="Change" value="+0.0014" increase />
+              <RateMetricCard label="% Change" value="+0.16%" increase show-indicator />
+            </div>
+
+            <TimeRangeSelector
+              v-model="selectedTimeRange"
+              :options="timeRanges"
+              aria-label="Chart time range"
+            />
+          </div>
+
+          <RateChartCard
+            pair="USD/EUR"
+            value="0.8530"
+            timestamp="May 14 16:00 CET"
+            :points="rateChartPoints"
+            :x-ticks="rateChartXTicks"
+            :y-ticks="[0.8612, 0.8516, 0.8421]"
+            :min-value="0.8421"
+            :max-value="0.8612"
+          />
+        </div>
+
+        <div v-else class="market-history__panel">
+          <p class="market-history__panel-label">{{ activeMarketTab }}</p>
+        </div>
+      </section>
 
       <section class="flex flex-col gap-6 border-t border-fx-neutral-400 pt-8">
         <div class="flex flex-col gap-4">
@@ -21,3 +113,37 @@
     </div>
   </main>
 </template>
+
+<style scoped>
+@reference "~/assets/css/main.css";
+
+.market-history {
+  @apply grid min-w-0 gap-5;
+}
+
+.market-history__history {
+  @apply grid min-w-0 gap-5;
+}
+
+.market-history__summary {
+  @apply grid min-w-0 gap-5 lg:grid-cols-[1fr_auto] lg:items-center;
+}
+
+.market-history__metrics {
+  @apply grid min-w-0 grid-cols-2 gap-4 sm:flex sm:flex-wrap;
+}
+
+.market-history__panel {
+  @apply flex min-h-[220px] items-center justify-center rounded-[14px] border border-fx-neutral-600 bg-fx-neutral-700;
+}
+
+.market-history__panel-label {
+  @apply text-preset-3-bold uppercase text-fx-neutral-100;
+}
+
+@media (max-width: 639px) {
+  .market-history__summary {
+    @apply gap-4;
+  }
+}
+</style>
