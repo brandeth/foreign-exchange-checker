@@ -232,12 +232,12 @@ function xTickPosition(index: number) {
 @reference "~/assets/css/main.css";
 
 .rate-chart-card {
-  @apply w-full min-w-0 overflow-hidden rounded-[14px] border border-fx-neutral-600 bg-fx-neutral-700 text-fx-neutral-50;
+  @apply grid h-[377px] w-full min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-5 overflow-hidden rounded-2xl border border-fx-neutral-600 bg-fx-neutral-700 p-5 text-fx-neutral-50;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
 .rate-chart-card__header {
-  @apply flex items-baseline justify-between gap-4 px-5 pt-5;
+  @apply flex items-baseline justify-between gap-4;
 }
 
 .rate-chart-card__pair {
@@ -249,7 +249,7 @@ function xTickPosition(index: number) {
 }
 
 .rate-chart-card__chart {
-  @apply block h-[316px] w-full;
+  @apply block h-full min-h-0 w-full;
 }
 
 .rate-chart-card__grid line {
@@ -277,19 +277,15 @@ function xTickPosition(index: number) {
 
 @media (max-width: 640px) {
   .rate-chart-card {
-    @apply rounded-lg;
+    @apply rounded-2xl;
   }
 
   .rate-chart-card__header {
-    @apply flex-col items-start gap-2 px-4 pt-4;
+    @apply flex-col items-start gap-2;
   }
 
   .rate-chart-card__meta {
     @apply whitespace-normal;
-  }
-
-  .rate-chart-card__chart {
-    @apply h-[230px];
   }
 }
 </style>
