@@ -2,9 +2,18 @@
 import deleteIcon from '~/assets/images/delete.svg'
 import deleteFilledIcon from '~/assets/images/delete-filled.svg'
 import exchangeIcon from '~/assets/images/exchange-icon.svg'
+import audFlag from '~/assets/images/flags/au.webp'
+import bdtFlag from '~/assets/images/flags/bd.webp'
+import cadFlag from '~/assets/images/flags/ca.webp'
+import chfFlag from '~/assets/images/flags/ch.webp'
+import cnyFlag from '~/assets/images/flags/cn.webp'
+import gbpFlag from '~/assets/images/flags/gb.webp'
+import inrFlag from '~/assets/images/flags/in.webp'
+import jpyFlag from '~/assets/images/flags/jp.webp'
 import searchIcon from '~/assets/images/search.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import starIcon from '~/assets/images/star.svg'
+import ComparisonCard from '~/components/ComparisonCard.vue'
 import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
@@ -53,6 +62,17 @@ const timeRanges = [
   { label: '3M', value: '3m' },
   { label: '1Y', value: '1y' },
   { label: '5Y', value: '5y' },
+]
+
+const comparisonItems = [
+  { code: 'GBP', name: 'British Pound', flagSrc: gbpFlag, value: '736.65', rate: '0.7366', favorited: true },
+  { code: 'JPY', name: 'Japanese Yen', flagSrc: jpyFlag, value: '157,910', rate: '157.91', favorited: true },
+  { code: 'CHF', name: 'Swiss Franc', flagSrc: chfFlag, value: '909.80', rate: '0.9098' },
+  { code: 'CAD', name: 'Canadian Dollar', flagSrc: cadFlag, value: '1,381.50', rate: '1.3815' },
+  { code: 'AUD', name: 'Australian Dollar', flagSrc: audFlag, value: '1,387.35', rate: '1.3874' },
+  { code: 'INR', name: 'Indian Rupee', flagSrc: inrFlag, value: '94,910.00', rate: '94.910', favorited: true },
+  { code: 'CNY', name: 'Chinese Yuan', flagSrc: cnyFlag, value: '7,210.00', rate: '7.2100' },
+  { code: 'BDT', name: 'Bangladeshi Taka', flagSrc: bdtFlag, value: '122,920', rate: '122.92', favorited: true },
 ]
 
 const colors = [
@@ -306,6 +326,11 @@ const typePresets = [
               :min-value="0.8421"
               :max-value="0.8612"
             />
+          </article>
+
+          <article class="flex min-w-0 flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5 lg:col-span-2">
+            <h3 class="text-preset-3-bold">Comparison Card</h3>
+            <ComparisonCard :items="comparisonItems" />
           </article>
 
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
