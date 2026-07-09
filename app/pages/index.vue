@@ -8,6 +8,7 @@ import gbpFlag from '~/assets/images/flags/gb.webp'
 import inrFlag from '~/assets/images/flags/in.webp'
 import jpyFlag from '~/assets/images/flags/jp.webp'
 import ComparisonCard from '~/components/ComparisonCard.vue'
+import FavoritesCard from '~/components/FavoritesCard.vue'
 import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
@@ -40,6 +41,19 @@ const comparisonItems = [
   { code: 'INR', name: 'Indian Rupee', flagSrc: inrFlag, value: '94,910.00', rate: '94.910', favorited: true },
   { code: 'CNY', name: 'Chinese Yuan', flagSrc: cnyFlag, value: '7,210.00', rate: '7.2100' },
   { code: 'BDT', name: 'Bangladeshi Taka', flagSrc: bdtFlag, value: '122,920', rate: '122.92', favorited: true },
+]
+
+const favoritePairs = [
+  { fromCurrency: 'USD', toCurrency: 'EUR', exchangeRate: '0.8530', priceChange: '+0.16%', increase: true },
+  { fromCurrency: 'GBP', toCurrency: 'USD', exchangeRate: '1.3575', priceChange: '-0.22%' },
+  { fromCurrency: 'USD', toCurrency: 'JPY', exchangeRate: '157.91', priceChange: '+0.04%', increase: true },
+  { fromCurrency: 'USD', toCurrency: 'BDT', exchangeRate: '122.92', priceChange: '+0.18%', increase: true },
+  { fromCurrency: 'EUR', toCurrency: 'GBP', exchangeRate: '0.8633', priceChange: '+0.11%', increase: true },
+  { fromCurrency: 'AUD', toCurrency: 'NZD', exchangeRate: '1.2217', priceChange: '+0.23%', increase: true },
+  { fromCurrency: 'USD', toCurrency: 'INR', exchangeRate: '94.910', priceChange: '+0.05%', increase: true },
+  { fromCurrency: 'EUR', toCurrency: 'CHF', exchangeRate: '1.0668', priceChange: '-0.15%' },
+  { fromCurrency: 'GBP', toCurrency: 'JPY', exchangeRate: '213.21', priceChange: '+0.13%', increase: true },
+  { fromCurrency: 'USD', toCurrency: 'TRY', exchangeRate: '38.642', priceChange: '+0.54%', increase: true },
 ]
 
 const rateChartValues = [
@@ -113,6 +127,11 @@ const rateChartXTicks = [
         <ComparisonCard
           v-else-if="activeMarketTab === 'compare'"
           :items="comparisonItems"
+        />
+
+        <FavoritesCard
+          v-else-if="activeMarketTab === 'favorites'"
+          :items="favoritePairs"
         />
 
         <div v-else class="market-history__panel">
