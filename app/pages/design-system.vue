@@ -14,6 +14,7 @@ import searchIcon from '~/assets/images/search.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import starIcon from '~/assets/images/star.svg'
 import ComparisonCard from '~/components/ComparisonCard.vue'
+import ConversionLogCard from '~/components/ConversionLogCard.vue'
 import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
@@ -74,6 +75,21 @@ const comparisonItems = [
   { code: 'CNY', name: 'Chinese Yuan', flagSrc: cnyFlag, value: '7,210.00', rate: '7.2100' },
   { code: 'BDT', name: 'Bangladeshi Taka', flagSrc: bdtFlag, value: '122,920', rate: '122.92', favorited: true },
 ]
+
+const conversionLogs = ref([
+  { id: 'demo-log-1', timestampLabel: '20m', fromCurrency: 'USD', toCurrency: 'EUR', fromAmount: '1,000.00', toAmount: '853.02' },
+  { id: 'demo-log-2', timestampLabel: '34m', fromCurrency: 'EUR', toCurrency: 'JPY', fromAmount: '500.00', toAmount: '92,490' },
+  { id: 'demo-log-3', timestampLabel: '1h', fromCurrency: 'USD', toCurrency: 'GBP', fromAmount: '1,500.00', toAmount: '1,104.95' },
+  { id: 'demo-log-4', timestampLabel: '13 May', fromCurrency: 'AUD', toCurrency: 'USD', fromAmount: '2,000.00', toAmount: '1,441.60' },
+])
+
+function removeConversionLog(id: string) {
+  conversionLogs.value = conversionLogs.value.filter(item => item.id !== id)
+}
+
+function clearConversionLogs() {
+  conversionLogs.value = []
+}
 
 const colors = [
   { name: 'Neutral 900', className: 'bg-fx-neutral-900', value: '#0A0A0A', text: 'text-fx-neutral-50' },
@@ -331,6 +347,15 @@ const typePresets = [
           <article class="flex min-w-0 flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5 lg:col-span-2">
             <h3 class="text-preset-3-bold">Comparison Card</h3>
             <ComparisonCard :items="comparisonItems" />
+          </article>
+
+          <article class="flex min-w-0 flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5 lg:col-span-2">
+            <h3 class="text-preset-3-bold">Conversion Log Card</h3>
+            <ConversionLogCard
+              :items="conversionLogs"
+              @remove="removeConversionLog"
+              @clear="clearConversionLogs"
+            />
           </article>
 
           <article class="flex flex-col gap-5 border border-fx-neutral-400 bg-fx-neutral-700 p-5">
