@@ -8,6 +8,7 @@ import gbpFlag from '~/assets/images/flags/gb.webp'
 import inrFlag from '~/assets/images/flags/in.webp'
 import jpyFlag from '~/assets/images/flags/jp.webp'
 import ComparisonCard from '~/components/ComparisonCard.vue'
+import ConversionLogCard from '~/components/ConversionLogCard.vue'
 import FavoritesCard from '~/components/FavoritesCard.vue'
 import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
@@ -16,12 +17,23 @@ import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
 const activeMarketTab = ref('history')
 const selectedTimeRange = ref('1m')
 
-const marketTabs = [
+const conversionLogs = ref([
+  { id: 'log-1', timestampLabel: '20m', fromCurrency: 'USD', toCurrency: 'EUR', fromAmount: '1,000.00', toAmount: '853.02' },
+  { id: 'log-2', timestampLabel: '34m', fromCurrency: 'EUR', toCurrency: 'JPY', fromAmount: '500.00', toAmount: '92,490' },
+  { id: 'log-3', timestampLabel: '50m', fromCurrency: 'GBP', toCurrency: 'USD', fromAmount: '250.00', toAmount: '339.38' },
+  { id: 'log-4', timestampLabel: '1h', fromCurrency: 'USD', toCurrency: 'GBP', fromAmount: '1,500.00', toAmount: '1,104.95' },
+  { id: 'log-5', timestampLabel: '2h', fromCurrency: 'BDT', toCurrency: 'USD', fromAmount: '50,000', toAmount: '406.77' },
+  { id: 'log-6', timestampLabel: '4h', fromCurrency: 'EUR', toCurrency: 'INR', fromAmount: '100.00', toAmount: '11,127.43' },
+  { id: 'log-7', timestampLabel: '13 May', fromCurrency: 'AUD', toCurrency: 'USD', fromAmount: '2,000.00', toAmount: '1,441.60' },
+  { id: 'log-8', timestampLabel: '11 May', fromCurrency: 'CHF', toCurrency: 'USD', fromAmount: '750.00', toAmount: '824.36' },
+])
+
+const marketTabs = computed(() => [
   { label: 'History', value: 'history' },
   { label: 'Compare', value: 'compare' },
   { label: 'Favorites', value: 'favorites', badge: 10 },
-  { label: 'Log', value: 'log', badge: 8 },
-]
+  { label: 'Log', value: 'log', badge: conversionLogs.value.length },
+])
 
 const timeRanges = [
   { label: '1D', value: '1d' },
@@ -55,6 +67,14 @@ const favoritePairs = [
   { fromCurrency: 'GBP', toCurrency: 'JPY', exchangeRate: '213.21', priceChange: '+0.13%', increase: true },
   { fromCurrency: 'USD', toCurrency: 'TRY', exchangeRate: '38.642', priceChange: '+0.54%', increase: true },
 ]
+
+function removeConversionLog(id: string) {
+  conversionLogs.value = conversionLogs.value.filter(item => item.id !== id)
+}
+
+function clearConversionLogs() {
+  conversionLogs.value = []
+}
 
 const rateChartValues = [
   0.8543, 0.8546, 0.8558, 0.8569, 0.8575, 0.8562, 0.8547, 0.8550, 0.8548, 0.8535,
@@ -134,9 +154,12 @@ const rateChartXTicks = [
           :items="favoritePairs"
         />
 
-        <div v-else class="market-history__panel">
-          <p class="market-history__panel-label">{{ activeMarketTab }}</p>
-        </div>
+        <ConversionLogCard
+          v-else-if="activeMarketTab === 'log'"
+          :items="conversionLogs"
+          @remove="removeConversionLog"
+          @clear="clearConversionLogs"
+        />
       </section>
 
       <section class="flex flex-col gap-6 border-t border-fx-neutral-400 pt-8">
@@ -175,14 +198,6 @@ const rateChartXTicks = [
 
 .market-history__metrics {
   @apply grid min-w-0 grid-cols-2 gap-4 sm:flex sm:flex-wrap;
-}
-
-.market-history__panel {
-  @apply flex min-h-[220px] items-center justify-center rounded-[14px] border border-fx-neutral-600 bg-fx-neutral-700;
-}
-
-.market-history__panel-label {
-  @apply text-preset-3-bold uppercase text-fx-neutral-100;
 }
 
 @media (max-width: 639px) {
