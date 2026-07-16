@@ -102,6 +102,7 @@ const rateChartXTicks = [
   { label: 'May 06', index: 78 },
   { label: 'May 14', index: rateChartValues.length - 1 },
 ]
+
 </script>
 
 <template>
@@ -116,7 +117,10 @@ const rateChartXTicks = [
           aria-label="Exchange market views"
         />
 
-        <div v-if="activeMarketTab === 'history'" class="market-history__history">
+        <div
+          v-if="activeMarketTab === 'history' && rateChartPoints.length"
+          class="market-history__history"
+        >
           <div class="market-history__summary">
             <div class="market-history__metrics">
               <RateMetricCard label="Open" value="0.8516" />
@@ -142,6 +146,14 @@ const rateChartXTicks = [
             :min-value="0.8421"
             :max-value="0.8612"
           />
+        </div>
+
+        <div v-else-if="activeMarketTab === 'history'" class="market-history__empty" role="status">
+          <p class="market-history__empty-title">No chart data available</p>
+          <p class="market-history__empty-message">
+            We couldn't load rate history for USD/EUR right now.<br>
+            This usually clears up in a minute.
+          </p>
         </div>
 
         <ComparisonCard
@@ -198,6 +210,18 @@ const rateChartXTicks = [
 
 .market-history__metrics {
   @apply grid min-w-0 grid-cols-2 gap-4 sm:flex sm:flex-wrap;
+}
+
+.market-history__empty {
+  @apply flex min-h-[188px] min-w-0 flex-col items-center gap-4 pt-10 text-center;
+}
+
+.market-history__empty-title {
+  @apply m-0 text-preset-2 text-fx-neutral-100;
+}
+
+.market-history__empty-message {
+  @apply m-0 text-preset-4 text-fx-neutral-200;
 }
 
 @media (max-width: 639px) {
