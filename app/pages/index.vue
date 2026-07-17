@@ -148,18 +148,26 @@ const rateChartXTicks = [
           />
         </div>
 
-        <div v-else-if="activeMarketTab === 'history'" class="market-history__empty" role="status">
-          <p class="market-history__empty-title">No chart data available</p>
-          <p class="market-history__empty-message">
+        <div v-else-if="activeMarketTab === 'history'" class="market-view__empty" role="status">
+          <p class="market-view__empty-title">No chart data available</p>
+          <p class="market-view__empty-message">
             We couldn't load rate history for USD/EUR right now.<br>
             This usually clears up in a minute.
           </p>
         </div>
 
         <ComparisonCard
-          v-else-if="activeMarketTab === 'compare'"
+          v-else-if="activeMarketTab === 'compare' && comparisonItems.length"
           :items="comparisonItems"
         />
+
+        <div v-else-if="activeMarketTab === 'compare'" class="market-view__empty" role="status">
+          <p class="market-view__empty-title">No comparison available</p>
+          <p class="market-view__empty-message">
+            Enter an amount in SEND above to see what your<br>
+            money is worth in other currencies.
+          </p>
+        </div>
 
         <FavoritesCard
           v-else-if="activeMarketTab === 'favorites'"
@@ -212,15 +220,15 @@ const rateChartXTicks = [
   @apply grid min-w-0 grid-cols-2 gap-4 sm:flex sm:flex-wrap;
 }
 
-.market-history__empty {
+.market-view__empty {
   @apply flex min-h-[188px] min-w-0 flex-col items-center gap-4 pt-10 text-center;
 }
 
-.market-history__empty-title {
+.market-view__empty-title {
   @apply m-0 text-preset-2 text-fx-neutral-100;
 }
 
-.market-history__empty-message {
+.market-view__empty-message {
   @apply m-0 text-preset-4 text-fx-neutral-200;
 }
 
