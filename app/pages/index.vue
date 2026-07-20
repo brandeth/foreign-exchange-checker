@@ -8,8 +8,8 @@ import gbpFlag from '~/assets/images/flags/gb.webp'
 import inrFlag from '~/assets/images/flags/in.webp'
 import jpyFlag from '~/assets/images/flags/jp.webp'
 import ComparisonCard from '~/components/ComparisonCard.vue'
-import ConversionLogCard from '~/components/ConversionLogCard.vue'
-import FavoritesCard from '~/components/FavoritesCard.vue'
+import ConversionLogCard, { type ConversionLogItem } from '~/components/ConversionLogCard.vue'
+import FavoritesCard, { type FavoritePair } from '~/components/FavoritesCard.vue'
 import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
@@ -17,7 +17,7 @@ import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
 const activeMarketTab = ref('history')
 const selectedTimeRange = ref('1m')
 
-const conversionLogs = ref([
+const conversionLogs = ref<ConversionLogItem[]>([
   { id: 'log-1', timestampLabel: '20m', fromCurrency: 'USD', toCurrency: 'EUR', fromAmount: '1,000.00', toAmount: '853.02' },
   { id: 'log-2', timestampLabel: '34m', fromCurrency: 'EUR', toCurrency: 'JPY', fromAmount: '500.00', toAmount: '92,490' },
   { id: 'log-3', timestampLabel: '50m', fromCurrency: 'GBP', toCurrency: 'USD', fromAmount: '250.00', toAmount: '339.38' },
@@ -31,7 +31,7 @@ const conversionLogs = ref([
 const marketTabs = computed(() => [
   { label: 'History', value: 'history' },
   { label: 'Compare', value: 'compare' },
-  { label: 'Favorites', value: 'favorites', badge: 10 },
+  { label: 'Favorites', value: 'favorites', badge: favoritePairs.length },
   { label: 'Log', value: 'log', badge: conversionLogs.value.length },
 ])
 
@@ -55,7 +55,7 @@ const comparisonItems = [
   { code: 'BDT', name: 'Bangladeshi Taka', flagSrc: bdtFlag, value: '122,920', rate: '122.92', favorited: true },
 ]
 
-const favoritePairs = [
+const favoritePairs: FavoritePair[] = [
   { fromCurrency: 'USD', toCurrency: 'EUR', exchangeRate: '0.8530', priceChange: '+0.16%', increase: true },
   { fromCurrency: 'GBP', toCurrency: 'USD', exchangeRate: '1.3575', priceChange: '-0.22%' },
   { fromCurrency: 'USD', toCurrency: 'JPY', exchangeRate: '157.91', priceChange: '+0.04%', increase: true },
@@ -170,16 +170,32 @@ const rateChartXTicks = [
         </div>
 
         <FavoritesCard
-          v-else-if="activeMarketTab === 'favorites'"
+          v-else-if="activeMarketTab === 'favorites' && favoritePairs.length"
           :items="favoritePairs"
         />
 
+        <div v-else-if="activeMarketTab === 'favorites'" class="market-view__empty" role="status">
+          <p class="market-view__empty-title">No pinned pairs yet</p>
+          <p class="market-view__empty-message">
+            Pin a pair to track its rate here. Tap the star<br>
+            icon on any conversion or comparison row.
+          </p>
+        </div>
+
         <ConversionLogCard
-          v-else-if="activeMarketTab === 'log'"
+          v-else-if="activeMarketTab === 'log' && conversionLogs.length"
           :items="conversionLogs"
           @remove="removeConversionLog"
           @clear="clearConversionLogs"
         />
+
+        <div v-else-if="activeMarketTab === 'log'" class="market-view__empty" role="status">
+          <p class="market-view__empty-title">No conversions logged yet</p>
+          <p class="market-view__empty-message">
+            Every conversion is recorded here automatically when you tap LOG CONVERSION.<br>
+            Your log is private to this session and this browser.
+          </p>
+        </div>
       </section>
 
       <section class="flex flex-col gap-6 border-t border-fx-neutral-400 pt-8">
