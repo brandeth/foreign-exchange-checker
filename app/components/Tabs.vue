@@ -58,33 +58,49 @@ function handleKeydown(event: KeyboardEvent, index: number) {
 </script>
 
 <template>
-  <div
-    class="fx-tabs"
-    role="tablist"
-    :aria-label="ariaLabel"
-  >
-    <button
-      v-for="(tab, index) in tabs"
-      :key="tab.value"
-      class="fx-tabs__tab"
-      :class="{ 'fx-tabs__tab--active': tab.value === activeValue }"
-      type="button"
-      role="tab"
-      :aria-selected="tab.value === activeValue"
-      :tabindex="tab.value === activeValue ? 0 : -1"
-      @click="selectTab(index)"
-      @keydown="handleKeydown($event, index)"
+  <div class="fx-tabs-shell">
+    <label class="fx-tabs__mobile">
+      <span class="sr-only">{{ ariaLabel }}</span>
+      <select v-model="model" class="fx-tabs__select" :aria-label="ariaLabel">
+        <option v-for="tab in tabs" :key="tab.value" :value="tab.value">
+          {{ tab.label }}
+        </option>
+      </select>
+      <span class="fx-tabs__mobile-chevron" aria-hidden="true" />
+    </label>
+
+    <div
+      class="fx-tabs"
+      role="tablist"
+      :aria-label="ariaLabel"
     >
-      <span>{{ tab.label }}</span>
-      <span v-if="tab.badge !== undefined" class="fx-tabs__badge">
-        {{ tab.badge }}
-      </span>
-    </button>
+      <button
+        v-for="(tab, index) in tabs"
+        :key="tab.value"
+        class="fx-tabs__tab"
+        :class="{ 'fx-tabs__tab--active': tab.value === activeValue }"
+        type="button"
+        role="tab"
+        :aria-selected="tab.value === activeValue"
+        :tabindex="tab.value === activeValue ? 0 : -1"
+        @click="selectTab(index)"
+        @keydown="handleKeydown($event, index)"
+      >
+        <span>{{ tab.label }}</span>
+        <span v-if="tab.badge !== undefined" class="fx-tabs__badge">
+          {{ tab.badge }}
+        </span>
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
 @reference "~/assets/css/main.css";
+
+.fx-tabs__mobile {
+  @apply relative hidden;
+}
 
 .fx-tabs {
   @apply flex h-[42px] w-full gap-2 overflow-x-auto overflow-y-hidden border-b border-fx-neutral-600 p-0;
@@ -113,5 +129,28 @@ function handleKeydown(event: KeyboardEvent, index: number) {
 
 .fx-tabs__badge {
   @apply inline-flex h-5 min-w-5 items-center justify-center rounded-[9999px] bg-fx-lime-800 px-1 text-preset-5-medium text-fx-lime-500;
+}
+
+@media (max-width: 639px) {
+  .fx-tabs {
+    @apply hidden;
+  }
+
+  .fx-tabs__mobile {
+    @apply block h-[46px] w-full;
+  }
+
+  .fx-tabs__select {
+    @apply h-full w-full appearance-none rounded-lg border border-fx-neutral-400 bg-fx-neutral-700 px-4 pr-12 text-preset-3 uppercase text-fx-neutral-50 outline-none;
+  }
+
+  .fx-tabs__select:focus-visible {
+    box-shadow: 0 0 0 1px var(--color-fx-lime-500);
+  }
+
+  .fx-tabs__mobile-chevron {
+    @apply pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 bg-fx-neutral-50;
+    mask: url("~/assets/images/chevron-down.svg") center / contain no-repeat;
+  }
 }
 </style>

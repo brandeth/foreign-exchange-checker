@@ -313,4 +313,44 @@ onBeforeUnmount(() => {
 .currency-dropdown__check {
   @apply size-4 justify-self-center;
 }
+
+@media (max-width: 639px) {
+  .currency-dropdown__trigger {
+    @apply h-[46px] gap-2 rounded-[10px] p-3 text-preset-3;
+  }
+
+  .currency-dropdown__trigger-flag {
+    @apply size-6;
+  }
+}
+
+@media (max-width: 389px) {
+  .currency-dropdown__trigger {
+    @apply h-10 p-2 text-preset-4;
+  }
+
+  .currency-dropdown__trigger-flag {
+    @apply size-5;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1024px) {
+  .currency-dropdown__trigger {
+    @apply h-[54px] gap-3 rounded-[10px] p-3 text-preset-3;
+  }
+
+  .currency-dropdown__trigger-flag {
+    @apply size-6;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 860px) {
+  .currency-dropdown__trigger {
+    @apply h-12 gap-2 p-2 text-preset-4;
+  }
+
+  .currency-dropdown__trigger-flag {
+    @apply size-5;
+  }
+}
 </style>
