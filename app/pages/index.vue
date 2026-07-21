@@ -106,8 +106,8 @@ const rateChartXTicks = [
 </script>
 
 <template>
-  <main class="min-h-screen bg-fx-neutral-900 px-6 py-9 text-fx-neutral-50">
-    <div class="mx-auto flex max-w-[1036px] flex-col gap-12">
+  <main class="home-page min-h-screen bg-fx-neutral-900 px-6 py-9 text-fx-neutral-50">
+    <div class="home-page__content mx-auto flex max-w-[1036px] flex-col gap-12">
       <CheckRate />
 
       <section class="market-history" aria-label="Exchange market views">
@@ -198,7 +198,7 @@ const rateChartXTicks = [
         </div>
       </section>
 
-      <section class="flex flex-col gap-6 border-t border-fx-neutral-400 pt-8">
+      <section class="hidden flex-col gap-6 border-t border-fx-neutral-400 pt-8 sm:flex">
         <div class="flex flex-col gap-4">
           <p class="text-preset-5-medium uppercase text-fx-lime-500">Foreign Exchange Checker</p>
           <h1 class="text-preset-1-tablet md:text-preset-1 max-w-3xl">
@@ -248,9 +248,55 @@ const rateChartXTicks = [
   @apply m-0 text-preset-4 text-fx-neutral-200;
 }
 
-@media (max-width: 639px) {
+@media (min-width: 640px) and (max-width: 1024px) {
+  .home-page {
+    @apply px-8 py-16;
+  }
+
+  .home-page__content {
+    @apply max-w-none gap-16;
+  }
+
+  .market-history {
+    @apply gap-7;
+  }
+
+  .market-history__history {
+    @apply gap-7;
+  }
+
   .market-history__summary {
-    @apply gap-4;
+    @apply grid-cols-1 gap-7;
+  }
+
+  .market-history__metrics {
+    @apply grid grid-cols-4 gap-5;
+  }
+}
+
+@media (max-width: 639px) {
+  .home-page {
+    @apply px-6 py-12;
+  }
+
+  .home-page__content {
+    @apply gap-12;
+  }
+
+  .market-history {
+    @apply gap-5;
+  }
+
+  .market-history__history {
+    @apply gap-6;
+  }
+
+  .market-history__summary {
+    @apply gap-6;
+  }
+
+  .market-history__metrics {
+    @apply gap-3;
   }
 }
 </style>

@@ -125,4 +125,33 @@ withDefaults(defineProps<{
 .fx-button--favorite.fx-button--icon-only.fx-button--pressed:focus-visible {
   @apply border-fx-neutral-500 bg-fx-neutral-500;
 }
+
+@media (max-width: 639px) {
+  .fx-button {
+    @apply h-10 px-3 text-preset-5-medium;
+  }
+
+  .fx-button--exchange,
+  .fx-button--exchange.fx-button--icon-only {
+    @apply size-[54px];
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1024px) {
+  .fx-button {
+    @apply h-11 rounded-[10px] px-4 py-3 text-preset-4;
+  }
+
+  .fx-button--exchange,
+  .fx-button--exchange.fx-button--icon-only {
+    @apply size-16;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 860px) {
+  .fx-button--exchange,
+  .fx-button--exchange.fx-button--icon-only {
+    @apply size-12;
+  }
+}
 </style>

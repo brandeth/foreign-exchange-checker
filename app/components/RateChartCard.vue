@@ -30,6 +30,8 @@ const props = withDefaults(defineProps<{
 const chartId = useId().replace(/[^a-zA-Z0-9_-]/g, '')
 const fillId = `rate-chart-fill-${chartId}`
 const glowId = `rate-chart-glow-${chartId}`
+const mobileFillId = `rate-chart-mobile-fill-${chartId}`
+const mobileGlowId = `rate-chart-mobile-glow-${chartId}`
 
 const chart = {
   width: 1040,
@@ -42,11 +44,29 @@ const chart = {
   },
 }
 
+const mobileChart = {
+  width: 360,
+  height: 360,
+  padding: {
+    top: 10,
+    right: 2,
+    bottom: 34,
+    left: 55,
+  },
+}
+
 const plot = {
   x: chart.padding.left,
   y: chart.padding.top,
   width: chart.width - chart.padding.left - chart.padding.right,
   height: chart.height - chart.padding.top - chart.padding.bottom,
+}
+
+const mobilePlot = {
+  x: mobileChart.padding.left,
+  y: mobileChart.padding.top,
+  width: mobileChart.width - mobileChart.padding.left - mobileChart.padding.right,
+  height: mobileChart.height - mobileChart.padding.top - mobileChart.padding.bottom,
 }
 
 const values = computed(() => props.points.map(point => point.value))
@@ -98,6 +118,20 @@ const xTicks = computed(() => {
     { label: props.points[Math.round(lastIndex * 0.75)]?.label ?? '', index: Math.round(lastIndex * 0.75) },
     { label: props.points[lastIndex]?.label ?? '', index: lastIndex },
   ].filter(tick => tick.label)
+})
+
+const mobileXTicks = computed(() => {
+  const ticks = xTicks.value
+
+  if (ticks.length <= 3) {
+    return ticks
+  }
+
+  return [
+    ticks[0],
+    ticks[Math.floor(ticks.length / 2)],
+    ticks[ticks.length - 1],
+  ].filter((tick): tick is ChartTick => Boolean(tick))
 })
 
 const coordinatePoints = computed(() => {
@@ -157,6 +191,47 @@ function xTickPosition(index: number) {
 
   return plot.x + (index / lastIndex) * plot.width
 }
+
+
+const mobileCoordinatePoints = computed(() => {
+  const lastIndex = Math.max(props.points.length - 1, 1)
+  const range = Math.max(bounds.value.max - bounds.value.min, 0.0001)
+
+  return props.points.map((point, index) => ({
+    x: mobilePlot.x + (index / lastIndex) * mobilePlot.width,
+    y: mobilePlot.y + ((bounds.value.max - point.value) / range) * mobilePlot.height,
+  }))
+})
+
+const mobileLinePath = computed(() => mobileCoordinatePoints.value
+  .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+  .join(' '))
+
+const mobileAreaPath = computed(() => {
+  const points = mobileCoordinatePoints.value
+  const first = points[0]
+  const last = points[points.length - 1]
+
+  if (!first || !last) {
+    return ''
+  }
+
+  const baseline = mobilePlot.y + mobilePlot.height
+
+  return `${mobileLinePath.value} L ${last.x.toFixed(2)} ${baseline} L ${first.x.toFixed(2)} ${baseline} Z`
+})
+
+function mobileYTickPosition(tick: number) {
+  const range = Math.max(bounds.value.max - bounds.value.min, 0.0001)
+
+  return mobilePlot.y + ((bounds.value.max - tick) / range) * mobilePlot.height
+}
+
+function mobileXTickPosition(index: number) {
+  const lastIndex = Math.max(props.points.length - 1, 1)
+
+  return mobilePlot.x + (index / lastIndex) * mobilePlot.width
+}
 </script>
 
 <template>
@@ -167,7 +242,7 @@ function xTickPosition(index: number) {
     </header>
 
     <svg
-      class="rate-chart-card__chart"
+      class="rate-chart-card__chart rate-chart-card__chart--desktop"
       :viewBox="`0 0 ${chart.width} ${chart.height}`"
       role="img"
       :aria-label="summary"
@@ -225,6 +300,76 @@ function xTickPosition(index: number) {
         </text>
       </g>
     </svg>
+
+    <svg
+      class="rate-chart-card__chart rate-chart-card__chart--mobile"
+      :viewBox="`0 0 ${mobileChart.width} ${mobileChart.height}`"
+      role="img"
+      :aria-label="summary"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient :id="mobileFillId" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--color-fx-lime-500)" stop-opacity="0.76" />
+          <stop offset="0.55" stop-color="var(--color-fx-lime-500)" stop-opacity="0.2" />
+          <stop offset="1" stop-color="var(--color-fx-lime-500)" stop-opacity="0" />
+        </linearGradient>
+        <filter :id="mobileGlowId" x="-8%" y="-18%" width="116%" height="136%">
+          <feGaussianBlur stdDeviation="1.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <g class="rate-chart-card__grid">
+        <line
+          v-for="tick in yTicks"
+          :key="`mobile-grid-${tick}`"
+          :x1="mobilePlot.x"
+          :x2="mobilePlot.x + mobilePlot.width"
+          :y1="mobileYTickPosition(tick)"
+          :y2="mobileYTickPosition(tick)"
+        />
+      </g>
+
+      <g class="rate-chart-card__y-axis">
+        <text
+          v-for="tick in yTicks"
+          :key="`mobile-label-${tick}`"
+          :x="0"
+          :y="mobileYTickPosition(tick) + 4"
+        >
+          {{ tick.toFixed(4) }}
+        </text>
+      </g>
+
+      <path
+        v-if="mobileAreaPath"
+        class="rate-chart-card__area"
+        :d="mobileAreaPath"
+        :fill="`url(#${mobileFillId})`"
+      />
+      <path
+        v-if="mobileLinePath"
+        class="rate-chart-card__line"
+        :d="mobileLinePath"
+        :filter="`url(#${mobileGlowId})`"
+      />
+
+      <g class="rate-chart-card__x-axis">
+        <text
+          v-for="tick in mobileXTicks"
+          :key="`mobile-${tick.label}-${tick.index}`"
+          :x="mobileXTickPosition(tick.index)"
+          :y="mobileChart.height - 7"
+          :text-anchor="tick.index === 0 ? 'start' : tick.index === points.length - 1 ? 'end' : 'middle'"
+        >
+          {{ tick.label }}
+        </text>
+      </g>
+    </svg>
   </article>
 </template>
 
@@ -252,6 +397,10 @@ function xTickPosition(index: number) {
   @apply block h-full min-h-0 w-full;
 }
 
+.rate-chart-card__chart--mobile {
+  @apply hidden;
+}
+
 .rate-chart-card__grid line {
   stroke: rgb(255 255 255 / 0.11);
   stroke-dasharray: 1 7;
@@ -277,15 +426,53 @@ function xTickPosition(index: number) {
 
 @media (max-width: 640px) {
   .rate-chart-card {
-    @apply rounded-2xl;
+    @apply h-[420px] gap-5 rounded-[20px] p-4;
   }
 
   .rate-chart-card__header {
-    @apply flex-col items-start gap-2;
+    @apply flex-row items-baseline justify-between gap-3;
   }
 
   .rate-chart-card__meta {
-    @apply whitespace-normal;
+    @apply whitespace-nowrap text-[12px] tracking-[0.5px];
+  }
+
+  .rate-chart-card__chart--desktop {
+    @apply hidden;
+  }
+
+  .rate-chart-card__chart--mobile {
+    @apply block;
+  }
+
+  .rate-chart-card__y-axis text,
+  .rate-chart-card__x-axis text {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 389px) {
+  .rate-chart-card__meta {
+    @apply text-[10px];
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1024px) {
+  .rate-chart-card {
+    @apply h-[504px] gap-6 rounded-[24px] p-6;
+  }
+
+  .rate-chart-card__pair {
+    @apply text-[20px] leading-none;
+  }
+
+  .rate-chart-card__meta {
+    @apply text-preset-4;
+  }
+
+  .rate-chart-card__y-axis text,
+  .rate-chart-card__x-axis text {
+    @apply text-[12px];
   }
 }
 </style>

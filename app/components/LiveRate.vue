@@ -26,7 +26,7 @@ const changeLabel = computed(() => `${props.pair} ${props.rate}, ${props.directi
 @reference "~/assets/css/main.css";
 
 .live-rate {
-  @apply box-border flex h-10 shrink-0 items-center gap-[10px] border-r border-fx-neutral-500 px-5 py-3;
+  @apply box-border flex h-full shrink-0 items-center gap-[10px] border-r border-fx-neutral-500 px-5 py-3;
 }
 
 .live-rate__pair {

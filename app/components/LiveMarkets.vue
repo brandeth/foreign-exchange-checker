@@ -84,4 +84,25 @@ const {
   @apply flex h-full shrink-0;
 }
 
+@media (max-width: 639px) {
+  .live-markets__label {
+    @apply gap-2 px-3;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1024px) {
+  .live-markets,
+  .live-markets__label {
+    @apply h-[54px];
+  }
+
+  .live-markets__label {
+    @apply gap-3 px-5 py-4 text-preset-3-medium;
+  }
+
+  .live-markets__dot {
+    @apply size-2;
+  }
+}
+
 </style>

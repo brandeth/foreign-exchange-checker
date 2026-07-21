@@ -97,4 +97,24 @@ function handleKeydown(event: KeyboardEvent, index: number) {
 .time-range-selector__option:focus-visible {
   box-shadow: inset 0 0 0 1px var(--color-fx-lime-500);
 }
+
+@media (max-width: 639px) {
+  .time-range-selector {
+    @apply h-[54px] max-w-none rounded-[10px] text-preset-4;
+  }
+
+  .time-range-selector__option {
+    @apply rounded-[10px] px-2 py-4;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1024px) {
+  .time-range-selector {
+    @apply h-[54px] max-w-[382px] rounded-[10px] text-preset-4;
+  }
+
+  .time-range-selector__option {
+    @apply rounded-[10px] px-5 py-4;
+  }
+}
 </style>

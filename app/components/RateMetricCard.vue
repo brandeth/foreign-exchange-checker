@@ -41,4 +41,52 @@ withDefaults(defineProps<{
 .rate-metric-card__value--increase {
   @apply text-fx-green-500;
 }
+
+@media (max-width: 639px) {
+  .rate-metric-card {
+    @apply h-[108px] max-w-none rounded-[20px] px-6 py-5;
+  }
+
+  .rate-metric-card__label {
+    @apply text-preset-3;
+  }
+
+  .rate-metric-card__value {
+    @apply text-[24px] leading-none;
+  }
+}
+
+@media (max-width: 389px) {
+  .rate-metric-card {
+    @apply px-4;
+  }
+
+  .rate-metric-card__value {
+    @apply text-preset-2;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1024px) {
+  .rate-metric-card {
+    @apply h-[108px] max-w-none rounded-[20px] px-6 py-5;
+  }
+
+  .rate-metric-card__label {
+    @apply text-preset-3;
+  }
+
+  .rate-metric-card__value {
+    @apply text-[24px] leading-none;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 860px) {
+  .rate-metric-card {
+    @apply px-4;
+  }
+
+  .rate-metric-card__value {
+    @apply text-preset-2;
+  }
+}
 </style>
