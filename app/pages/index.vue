@@ -13,6 +13,7 @@ import FavoritesCard, { type FavoritePair } from '~/components/FavoritesCard.vue
 import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
+import type { HistoryRange, RateHistoryResponse } from '#shared/rateHistory'
 
 const activeMarketTab = ref('history')
 const selectedTimeRange = ref('1m')
@@ -76,39 +77,27 @@ function clearConversionLogs() {
   conversionLogs.value = []
 }
 
-const rateChartValues = [
-  0.8543, 0.8546, 0.8558, 0.8569, 0.8575, 0.8562, 0.8547, 0.8550, 0.8548, 0.8535,
-  0.8535, 0.8521, 0.8526, 0.8524, 0.8527, 0.8531, 0.8537, 0.8533, 0.8538, 0.8552,
-  0.8550, 0.8565, 0.8558, 0.8543, 0.8539, 0.8532, 0.8537, 0.8525, 0.8521, 0.8524,
-  0.8519, 0.8526, 0.8509, 0.8524, 0.8501, 0.8508, 0.8509, 0.8511, 0.8510, 0.8518,
-  0.8509, 0.8509, 0.8502, 0.8493, 0.8504, 0.8516, 0.8531, 0.8523, 0.8510, 0.8505,
-  0.8494, 0.8489, 0.8502, 0.8492, 0.8505, 0.8496, 0.8498, 0.8484, 0.8490, 0.8482,
-  0.8488, 0.8491, 0.8504, 0.8498, 0.8505, 0.8501, 0.8511, 0.8528, 0.8519, 0.8542,
-  0.8555, 0.8556, 0.8562, 0.8565, 0.8570, 0.8567, 0.8591, 0.8597, 0.8568, 0.8545,
-  0.8547, 0.8532, 0.8520, 0.8517, 0.8538, 0.8546, 0.8540, 0.8568, 0.8569, 0.8582,
-  0.8590, 0.8570, 0.8583, 0.8598, 0.8596, 0.8581, 0.8580, 0.8578, 0.8584, 0.8576,
-  0.8573, 0.8556, 0.8560, 0.8571, 0.8590,
-]
-
-const rateChartPoints = rateChartValues.map((value, index) => ({
-  label: index === 0 ? 'Apr 14' : index === rateChartValues.length - 1 ? 'May 14' : `Point ${index + 1}`,
-  value,
-}))
-
-const rateChartXTicks = [
-  { label: 'Apr 14', index: 0 },
-  { label: 'Apr 21', index: 26 },
-  { label: 'Apr 28', index: 52 },
-  { label: 'May 06', index: 78 },
-  { label: 'May 14', index: rateChartValues.length - 1 },
-]
+const selectedPair = ref({ base: 'USD', quote: 'EUR' })
+const { data: history, loading: historyLoading, error: historyError, points: rateChartPoints, metrics, load: loadHistory } = useRateHistory(
+  query => $fetch<RateHistoryResponse>('/api/rate-history', { query }),
+)
+const historyQuery = computed(() => ({ ...selectedPair.value, range: selectedTimeRange.value as HistoryRange }))
+const chartPair = computed(() => selectedPair.value.base + '/' + selectedPair.value.quote)
+function refreshHistory() {
+  return loadHistory(historyQuery.value)
+}
+function updatePair(pair: { base: string; quote: string }) {
+  if (pair.base !== selectedPair.value.base || pair.quote !== selectedPair.value.quote) selectedPair.value = pair
+}
+onMounted(refreshHistory)
+watch(historyQuery, refreshHistory)
 
 </script>
 
 <template>
   <main class="home-page min-h-screen bg-fx-neutral-900 px-6 py-9 text-fx-neutral-50">
     <div class="home-page__content mx-auto flex max-w-[1036px] flex-col gap-12">
-      <CheckRate />
+      <CheckRate @pair-change="updatePair" />
 
       <section class="market-history" aria-label="Exchange market views">
         <Tabs
@@ -117,43 +106,34 @@ const rateChartXTicks = [
           aria-label="Exchange market views"
         />
 
-        <div
-          v-if="activeMarketTab === 'history' && rateChartPoints.length"
-          class="market-history__history"
-        >
+        <div v-if="activeMarketTab === 'history'" class="market-history__history">
           <div class="market-history__summary">
             <div class="market-history__metrics">
-              <RateMetricCard label="Open" value="0.8516" />
-              <RateMetricCard label="Last" value="0.8530" />
-              <RateMetricCard label="Change" value="+0.0014" increase />
-              <RateMetricCard label="% Change" value="+0.16%" increase show-indicator />
+              <RateMetricCard label="First" :value="metrics.first" />
+              <RateMetricCard label="Last" :value="metrics.last" />
+              <RateMetricCard label="Change" :value="metrics.change" :increase="metrics.direction > 0" :decrease="metrics.direction < 0" />
+              <RateMetricCard label="% Change" :value="metrics.percent" :increase="metrics.direction > 0" :decrease="metrics.direction < 0" show-indicator />
             </div>
+            <TimeRangeSelector v-model="selectedTimeRange" :options="timeRanges" aria-label="Chart time range" />
+          </div>
 
-            <TimeRangeSelector
-              v-model="selectedTimeRange"
-              :options="timeRanges"
-              aria-label="Chart time range"
-            />
+          <div role="status" aria-live="polite" class="text-preset-5 text-fx-neutral-200">
+            <p v-if="historyLoading">Loading {{ chartPair }} history…</p>
+            <p v-else-if="historyError" class="text-fx-red-500">{{ historyError }}</p>
+            <p v-else-if="!rateChartPoints.length">No rate history available for {{ chartPair }} in this period.</p>
+            <p v-else-if="selectedPair.base === selectedPair.quote">Same currency · The rate remains 1.</p>
+            <p v-else>Daily observations from Frankfurter. {{ selectedTimeRange === '1d' ? '1D shows the latest daily observation; intraday data is unavailable.' : 'Changes compare the first and last available observations in this period.' }}</p>
+            <p v-if="history?.stale" class="mt-2 text-fx-red-500">Could not refresh history. Showing cached observations.</p>
+            <Button v-if="historyError || history?.stale" class="mt-3" :disabled="historyLoading" @click="refreshHistory">Retry history</Button>
           </div>
 
           <RateChartCard
-            pair="USD/EUR"
-            value="0.8530"
-            timestamp="May 14 16:00 CET"
+            v-if="rateChartPoints.length"
+            :pair="chartPair"
+            :value="metrics.last"
+            :timestamp="rateChartPoints.at(-1)?.date ?? ''"
             :points="rateChartPoints"
-            :x-ticks="rateChartXTicks"
-            :y-ticks="[0.8612, 0.8516, 0.8421]"
-            :min-value="0.8421"
-            :max-value="0.8612"
           />
-        </div>
-
-        <div v-else-if="activeMarketTab === 'history'" class="market-view__empty" role="status">
-          <p class="market-view__empty-title">No chart data available</p>
-          <p class="market-view__empty-message">
-            We couldn't load rate history for USD/EUR right now.<br>
-            This usually clears up in a minute.
-          </p>
         </div>
 
         <ComparisonCard

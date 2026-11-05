@@ -1,4 +1,4 @@
-export const converterCurrencies = ['USD', 'EUR', 'GBP', 'AED', 'ARS', 'AUD', 'BDT'] as const
+export { converterCurrencies } from '#shared/currencies.ts'
 
 export type ExchangeRate = { rate: number; date: string | null }
 

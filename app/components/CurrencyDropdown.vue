@@ -2,19 +2,10 @@
 import chevronDownIcon from '~/assets/images/chevron-down.svg'
 import checkIcon from '~/assets/images/check.svg'
 import searchIcon from '~/assets/images/search.svg'
-import aeFlag from '~/assets/images/flags/ae.webp'
-import arFlag from '~/assets/images/flags/ar.webp'
-import auFlag from '~/assets/images/flags/au.webp'
-import bdFlag from '~/assets/images/flags/bd.webp'
-import euFlag from '~/assets/images/flags/eu.webp'
-import gbFlag from '~/assets/images/flags/gb.webp'
-import usFlag from '~/assets/images/flags/us.webp'
+import { currencies, filterCurrencies, popularCurrencyCodes, type Currency } from '#shared/currencies'
 
-type Currency = {
-  code: string
-  name: string
-  flag: string
-}
+const flagAssets = import.meta.glob<string>('../assets/images/flags/*.webp', { eager: true, query: '?url', import: 'default' })
+const flagSrc = (currency: Currency) => flagAssets[`../assets/images/flags/${currency.flag}.webp`]
 
 const props = withDefaults(defineProps<{
   initialCurrency?: string
@@ -26,24 +17,13 @@ const props = withDefaults(defineProps<{
 const model = defineModel<string>()
 const dropdownId = useId()
 
-const popularCurrencies: Currency[] = [
-  { code: 'USD', name: 'US Dollar', flag: usFlag },
-  { code: 'EUR', name: 'Euro', flag: euFlag },
-  { code: 'GBP', name: 'British Pound', flag: gbFlag },
-]
-
-const otherCurrencies: Currency[] = [
-  { code: 'AED', name: 'UAE Dirham', flag: aeFlag },
-  { code: 'ARS', name: 'Argentine Peso', flag: arFlag },
-  { code: 'AUD', name: 'Australian Dollar', flag: auFlag },
-  { code: 'BDT', name: 'Bangladeshi Taka', flag: bdFlag },
-]
-
-const currencies = [...popularCurrencies, ...otherCurrencies]
 const isOpen = ref(false)
 const searchQuery = ref('')
+const matchingCurrencies = computed(() => filterCurrencies(searchQuery.value))
+const popularCurrencies = computed(() => matchingCurrencies.value.filter(currency => popularCurrencyCodes.includes(currency.code)))
+const otherCurrencies = computed(() => matchingCurrencies.value.filter(currency => !popularCurrencyCodes.includes(currency.code)))
 const selectedCurrency = computed(() =>
-  currencies.find(currency => currency.code === (model.value ?? props.initialCurrency)) ?? popularCurrencies[0]!,
+  currencies.find(currency => currency.code === (model.value ?? props.initialCurrency)) ?? currencies[0]!,
 )
 const triggerRef = ref<HTMLButtonElement | null>(null)
 const menuRef = ref<HTMLDivElement | null>(null)
@@ -95,6 +75,7 @@ const toggleDropdown = () => {
 const selectCurrency = (currency: Currency) => {
   model.value = currency.code
   isOpen.value = false
+  triggerRef.value?.focus()
 }
 
 const closeDropdown = () => {
@@ -129,6 +110,7 @@ const handleDocumentKeyDown = (event: KeyboardEvent) => {
 
 watch(isOpen, async (open) => {
   if (!open) {
+    searchQuery.value = ''
     menuPosition.value = {
       left: '0px',
       top: '0px',
@@ -140,6 +122,12 @@ watch(isOpen, async (open) => {
 
   await nextTick()
   updateMenuPosition()
+  menuRef.value?.querySelector<HTMLInputElement>('input')?.focus()
+})
+
+watch(searchQuery, async () => {
+  await nextTick()
+  if (isOpen.value) updateMenuPosition()
 })
 
 onMounted(() => {
@@ -169,7 +157,7 @@ onBeforeUnmount(() => {
       @click="toggleDropdown"
     >
       <img
-        :src="selectedCurrency.flag"
+        :src="flagSrc(selectedCurrency)"
         :alt="`${selectedCurrency.code} flag`"
         class="currency-dropdown__trigger-flag"
       >
@@ -188,13 +176,15 @@ onBeforeUnmount(() => {
       class="currency-dropdown__menu"
       :style="menuPosition"
     >
-      <Input v-model="searchQuery" placeholder="Search currencies...">
+      <Input v-model="searchQuery" placeholder="Search currencies..." aria-label="Search by country, currency, or code">
         <template #icon>
           <img :src="searchIcon" alt="">
         </template>
       </Input>
 
-      <section class="currency-dropdown__section" :aria-labelledby="`${dropdownId}-popular`">
+      <p v-if="!matchingCurrencies.length" role="status" class="p-3 text-preset-5 text-fx-neutral-200">No currencies found. Try a country, currency name, or code.</p>
+
+      <section v-if="popularCurrencies.length" class="currency-dropdown__section" :aria-labelledby="`${dropdownId}-popular`">
         <div class="currency-dropdown__section-heading">
           <h4 :id="`${dropdownId}-popular`">Popular</h4>
           <span>{{ popularCurrencies.length }}</span>
@@ -209,7 +199,7 @@ onBeforeUnmount(() => {
               :aria-selected="selectedCurrency.code === currency.code"
               @click="selectCurrency(currency)"
             >
-              <img :src="currency.flag" :alt="`${currency.code} flag`" class="currency-dropdown__option-flag">
+              <img :src="flagSrc(currency)" :alt="`${currency.code} flag`" class="currency-dropdown__option-flag">
               <span class="currency-dropdown__option-code">{{ currency.code }}</span>
               <span class="currency-dropdown__option-name">{{ currency.name }}</span>
               <img
@@ -224,7 +214,7 @@ onBeforeUnmount(() => {
         </ul>
       </section>
 
-      <section class="currency-dropdown__section" :aria-labelledby="`${dropdownId}-other`">
+      <section v-if="otherCurrencies.length" class="currency-dropdown__section" :aria-labelledby="`${dropdownId}-other`">
         <div class="currency-dropdown__section-heading">
           <h4 :id="`${dropdownId}-other`">Other Currencies</h4>
           <span>{{ otherCurrencies.length }}</span>
@@ -239,7 +229,7 @@ onBeforeUnmount(() => {
               :aria-selected="selectedCurrency.code === currency.code"
               @click="selectCurrency(currency)"
             >
-              <img :src="currency.flag" :alt="`${currency.code} flag`" class="currency-dropdown__option-flag">
+              <img :src="flagSrc(currency)" :alt="`${currency.code} flag`" class="currency-dropdown__option-flag">
               <span class="currency-dropdown__option-code">{{ currency.code }}</span>
               <span class="currency-dropdown__option-name">{{ currency.name }}</span>
               <img

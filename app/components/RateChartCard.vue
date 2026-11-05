@@ -4,6 +4,7 @@ import { computed, useId } from 'vue'
 type ChartPoint = {
   label: string
   value: number
+  date?: string
 }
 
 type ChartTick = {
@@ -82,7 +83,7 @@ const bounds = computed(() => {
   const min = props.minValue ?? Math.min(...values.value)
   const max = props.maxValue ?? Math.max(...values.value)
   const spread = Math.max(max - min, 0.0001)
-  const padding = spread * 0.08
+  const padding = max === min ? Math.max(Math.abs(max) * 0.01, 0.0001) : spread * 0.08
 
   return {
     min: props.minValue ?? min - padding,
@@ -107,9 +108,10 @@ const xTicks = computed(() => {
   }
 
   const lastIndex = props.points.length - 1
-  if (lastIndex <= 0) {
+  if (lastIndex < 0) {
     return []
   }
+  if (lastIndex === 0) return [{ label: props.points[0]!.label, index: 0 }]
 
   return [
     { label: props.points[0]?.label ?? '', index: 0 },
@@ -117,7 +119,7 @@ const xTicks = computed(() => {
     { label: props.points[Math.round(lastIndex * 0.5)]?.label ?? '', index: Math.round(lastIndex * 0.5) },
     { label: props.points[Math.round(lastIndex * 0.75)]?.label ?? '', index: Math.round(lastIndex * 0.75) },
     { label: props.points[lastIndex]?.label ?? '', index: lastIndex },
-  ].filter(tick => tick.label)
+  ].filter((tick, index, ticks) => tick.label && ticks.findIndex(item => item.index === tick.index) === index)
 })
 
 const mobileXTicks = computed(() => {
@@ -134,12 +136,25 @@ const mobileXTicks = computed(() => {
   ].filter((tick): tick is ChartTick => Boolean(tick))
 })
 
+function pointFraction(index: number) {
+  if (props.points.length === 1) return 0.5
+  const first = Date.parse(props.points[0]?.date ?? '')
+  const last = Date.parse(props.points.at(-1)?.date ?? '')
+  const current = Date.parse(props.points[index]?.date ?? '')
+  return Number.isFinite(first) && Number.isFinite(last) && Number.isFinite(current) && last > first
+    ? (current - first) / (last - first)
+    : index / Math.max(props.points.length - 1, 1)
+}
+
+function formatTick(value: number) {
+  return Math.abs(value) >= 10 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumSignificantDigits: 4 }).format(value) : value.toFixed(4)
+}
+
 const coordinatePoints = computed(() => {
-  const lastIndex = Math.max(props.points.length - 1, 1)
   const range = Math.max(bounds.value.max - bounds.value.min, 0.0001)
 
   return props.points.map((point, index) => {
-    const x = plot.x + (index / lastIndex) * plot.width
+    const x = plot.x + pointFraction(index) * plot.width
     const y = plot.y + ((bounds.value.max - point.value) / range) * plot.height
 
     return {
@@ -187,18 +202,15 @@ function yTickPosition(tick: number) {
 }
 
 function xTickPosition(index: number) {
-  const lastIndex = Math.max(props.points.length - 1, 1)
-
-  return plot.x + (index / lastIndex) * plot.width
+  return plot.x + pointFraction(index) * plot.width
 }
 
 
 const mobileCoordinatePoints = computed(() => {
-  const lastIndex = Math.max(props.points.length - 1, 1)
   const range = Math.max(bounds.value.max - bounds.value.min, 0.0001)
 
   return props.points.map((point, index) => ({
-    x: mobilePlot.x + (index / lastIndex) * mobilePlot.width,
+    x: mobilePlot.x + pointFraction(index) * mobilePlot.width,
     y: mobilePlot.y + ((bounds.value.max - point.value) / range) * mobilePlot.height,
   }))
 })
@@ -228,9 +240,7 @@ function mobileYTickPosition(tick: number) {
 }
 
 function mobileXTickPosition(index: number) {
-  const lastIndex = Math.max(props.points.length - 1, 1)
-
-  return mobilePlot.x + (index / lastIndex) * mobilePlot.width
+  return mobilePlot.x + pointFraction(index) * mobilePlot.width
 }
 </script>
 
@@ -281,12 +291,13 @@ function mobileXTickPosition(index: number) {
           :x="12"
           :y="yTickPosition(tick) + 4"
         >
-          {{ tick.toFixed(4) }}
+          {{ formatTick(tick) }}
         </text>
       </g>
 
       <path v-if="areaPath" class="rate-chart-card__area" :d="areaPath" :fill="`url(#${fillId})`" />
       <path v-if="linePath" class="rate-chart-card__line" :d="linePath" :filter="`url(#${glowId})`" />
+      <circle v-if="points.length === 1 && coordinatePoints[0]" :cx="coordinatePoints[0].x" :cy="coordinatePoints[0].y" r="4" fill="var(--color-fx-lime-500)" />
 
       <g class="rate-chart-card__x-axis">
         <text
@@ -341,7 +352,7 @@ function mobileXTickPosition(index: number) {
           :x="0"
           :y="mobileYTickPosition(tick) + 4"
         >
-          {{ tick.toFixed(4) }}
+          {{ formatTick(tick) }}
         </text>
       </g>
 
@@ -357,6 +368,7 @@ function mobileXTickPosition(index: number) {
         :d="mobileLinePath"
         :filter="`url(#${mobileGlowId})`"
       />
+      <circle v-if="points.length === 1 && mobileCoordinatePoints[0]" :cx="mobileCoordinatePoints[0].x" :cy="mobileCoordinatePoints[0].y" r="4" fill="var(--color-fx-lime-500)" />
 
       <g class="rate-chart-card__x-axis">
         <text

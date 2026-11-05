@@ -23,6 +23,12 @@ const {
   sendAmount, sendCurrency, receiveCurrency, amountError,
   formattedReceiveAmount, result, rateDates, swapCurrencies,
 } = useConverter(props.sendAmount, props.sendCurrency, props.receiveCurrency, rates)
+const emit = defineEmits<{
+  'pair-change': [pair: { base: string; quote: string }]
+}>()
+watch([sendCurrency, receiveCurrency], ([base, quote]) => {
+  emit('pair-change', { base, quote })
+}, { immediate: true })
 const converterId = useId()
 const isFavorited = ref(true)
 </script>
