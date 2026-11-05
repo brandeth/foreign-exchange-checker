@@ -3,34 +3,45 @@ import exchangeIcon from '~/assets/images/exchange-icon.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import verticalExchangeIcon from '~/assets/images/vertical-exchange-icon.svg'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   sendAmount?: string
-  receiveAmount?: string
   sendCurrency?: string
   receiveCurrency?: string
-  result?: string
 }>(), {
-  sendAmount: '1,000',
-  receiveAmount: '853.02',
+  sendAmount: '1000',
   sendCurrency: 'USD',
   receiveCurrency: 'EUR',
-  result: '1 USD = 0.8530 EUR',
 })
 
+const {
+  sendAmount, sendCurrency, receiveCurrency, amountError,
+  formattedReceiveAmount, result, swapCurrencies,
+} = useConverter(props.sendAmount, props.sendCurrency, props.receiveCurrency)
+const converterId = useId()
 const isFavorited = ref(true)
 </script>
 
 <template>
-  <section class="check-rate" aria-labelledby="check-rate-title">
-    <h2 id="check-rate-title" class="check-rate__title">Check The Rate</h2>
+  <section class="check-rate" :aria-labelledby="`${converterId}-title`">
+    <h2 :id="`${converterId}-title`" class="check-rate__title">Check The Rate</h2>
 
     <div class="check-rate__card">
       <div class="check-rate__fields">
         <div class="check-rate__field">
-          <span class="check-rate__label">Send</span>
+          <label :for="`${converterId}-amount`" class="check-rate__label">Send</label>
           <div class="check-rate__value-row">
-            <strong class="check-rate__amount">{{ sendAmount }}</strong>
-            <CurrencyDropdown :initial-currency="sendCurrency" />
+            <input
+              :id="`${converterId}-amount`"
+              v-model="sendAmount"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              spellcheck="false"
+              class="check-rate__amount check-rate__amount-input"
+              :aria-invalid="!!amountError"
+              :aria-describedby="`${converterId}-feedback`"
+            >
+            <CurrencyDropdown v-model="sendCurrency" aria-label="Send currency" />
           </div>
         </div>
 
@@ -39,6 +50,7 @@ const isFavorited = ref(true)
           variant="exchange"
           class="check-rate__exchange"
           aria-label="Swap currencies"
+          @click="swapCurrencies"
         >
           <img :src="exchangeIcon" alt="" class="check-rate__exchange-icon check-rate__exchange-icon--desktop">
           <img :src="verticalExchangeIcon" alt="" class="check-rate__exchange-icon check-rate__exchange-icon--mobile">
@@ -47,16 +59,20 @@ const isFavorited = ref(true)
         <div class="check-rate__field">
           <span class="check-rate__label">Receive</span>
           <div class="check-rate__value-row">
-            <strong class="check-rate__amount check-rate__amount--receive">
-              {{ receiveAmount }}
-            </strong>
-            <CurrencyDropdown :initial-currency="receiveCurrency" />
+            <output class="check-rate__amount check-rate__amount--receive" aria-label="Receive amount" aria-live="polite">
+              {{ formattedReceiveAmount }}
+            </output>
+            <CurrencyDropdown v-model="receiveCurrency" aria-label="Receive currency" />
           </div>
         </div>
       </div>
 
       <div class="check-rate__footer">
-        <p class="check-rate__result">{{ result }}</p>
+        <div class="check-rate__result">
+          <p>{{ result }}</p>
+          <p class="mt-2 text-fx-neutral-200">Sample rates · For demonstration only</p>
+          <p :id="`${converterId}-feedback`" aria-live="polite" :class="{ 'mt-2 text-fx-red-500': amountError }">{{ amountError }}</p>
+        </div>
 
         <div class="check-rate__actions">
           <Button
@@ -112,6 +128,10 @@ const isFavorited = ref(true)
 
 .check-rate__amount--receive {
   @apply text-fx-lime-500;
+}
+
+.check-rate__amount-input {
+  @apply w-full flex-1 rounded-sm bg-transparent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-fx-lime-500;
 }
 
 .check-rate__exchange {

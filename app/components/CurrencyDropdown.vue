@@ -18,9 +18,13 @@ type Currency = {
 
 const props = withDefaults(defineProps<{
   initialCurrency?: string
+  ariaLabel?: string
 }>(), {
   initialCurrency: 'USD',
+  ariaLabel: 'Currency',
 })
+const model = defineModel<string>()
+const dropdownId = useId()
 
 const popularCurrencies: Currency[] = [
   { code: 'USD', name: 'US Dollar', flag: usFlag },
@@ -38,8 +42,8 @@ const otherCurrencies: Currency[] = [
 const currencies = [...popularCurrencies, ...otherCurrencies]
 const isOpen = ref(false)
 const searchQuery = ref('')
-const selectedCurrency = ref(
-  currencies.find(currency => currency.code === props.initialCurrency) ?? popularCurrencies[0],
+const selectedCurrency = computed(() =>
+  currencies.find(currency => currency.code === (model.value ?? props.initialCurrency)) ?? popularCurrencies[0]!,
 )
 const triggerRef = ref<HTMLButtonElement | null>(null)
 const menuRef = ref<HTMLDivElement | null>(null)
@@ -89,7 +93,7 @@ const toggleDropdown = () => {
 }
 
 const selectCurrency = (currency: Currency) => {
-  selectedCurrency.value = currency
+  model.value = currency.code
   isOpen.value = false
 }
 
@@ -160,6 +164,7 @@ onBeforeUnmount(() => {
       class="currency-dropdown__trigger"
       type="button"
       :aria-expanded="isOpen"
+      :aria-label="`${props.ariaLabel}: ${selectedCurrency.code}`"
       aria-haspopup="listbox"
       @click="toggleDropdown"
     >
@@ -189,9 +194,9 @@ onBeforeUnmount(() => {
         </template>
       </Input>
 
-      <section class="currency-dropdown__section" aria-labelledby="popular-currencies">
+      <section class="currency-dropdown__section" :aria-labelledby="`${dropdownId}-popular`">
         <div class="currency-dropdown__section-heading">
-          <h4 id="popular-currencies">Popular</h4>
+          <h4 :id="`${dropdownId}-popular`">Popular</h4>
           <span>{{ popularCurrencies.length }}</span>
         </div>
 
@@ -219,10 +224,10 @@ onBeforeUnmount(() => {
         </ul>
       </section>
 
-      <section class="currency-dropdown__section" aria-labelledby="other-currencies">
+      <section class="currency-dropdown__section" :aria-labelledby="`${dropdownId}-other`">
         <div class="currency-dropdown__section-heading">
-          <h4 id="other-currencies">Other Currencies</h4>
-          <span>52</span>
+          <h4 :id="`${dropdownId}-other`">Other Currencies</h4>
+          <span>{{ otherCurrencies.length }}</span>
         </div>
 
         <ul class="currency-dropdown__list" role="listbox" aria-label="Other currencies">
