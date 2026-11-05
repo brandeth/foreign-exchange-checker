@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { shallowRef } from 'vue'
 import { useConverter as createConverter } from '../app/composables/useConverter.ts'
+import { converterCurrencies } from '#shared/currencies.ts'
 
 const fixture = {
   rates: Object.fromEntries(Object.entries({ USD: 1, EUR: 0.85302, GBP: 0.73665, AED: 3.6725, ARS: 1200, AUD: 1.38735, BDT: 122.92 })
@@ -52,11 +53,12 @@ test('handles empty, zero, decimal, and invalid amounts without producing a fals
 })
 
 test('supports same-currency conversions and every selectable currency', () => {
-  const converter = useConverter('1,000')
+  const rates = { rates: Object.fromEntries(converterCurrencies.map((code, index) => [code, { rate: index + 1, date: '2026-11-05' }])) }
+  const converter = createConverter('1,000', 'USD', 'EUR', rates)
   assert.equal(converter.sendAmount.value, '1000')
-  for (const from of ['USD', 'EUR', 'GBP', 'AED', 'ARS', 'AUD', 'BDT']) {
+  for (const from of converterCurrencies) {
     converter.sendCurrency.value = from
-    for (const to of ['USD', 'EUR', 'GBP', 'AED', 'ARS', 'AUD', 'BDT']) {
+    for (const to of converterCurrencies) {
       converter.receiveCurrency.value = to
       assert.ok(Number.isFinite(converter.receiveAmount.value), `${from}/${to}`)
       if (from === to) assert.equal(converter.receiveAmount.value, 1000)

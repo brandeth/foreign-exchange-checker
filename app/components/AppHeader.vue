@@ -1,10 +1,14 @@
+<script setup lang="ts">
+import { currencies } from '#shared/currencies'
+</script>
+
 <template>
   <header class="app-header flex h-[66px] items-center justify-between gap-4 overflow-hidden bg-transparent px-6 py-5">
     <NuxtLink to="/" aria-label="FX Checker home" class="inline-flex shrink-0 items-center">
       <img src="~/assets/logo-with-text.svg" alt="" class="h-[26px] w-[139px]" aria-hidden="true">
     </NuxtLink>
 
-    <p class="app-header__meta text-preset-4 min-w-0 text-right uppercase text-fx-neutral-200">55 Currencies &middot; EOD &middot; ECB Data</p>
+    <p class="app-header__meta text-preset-4 min-w-0 text-right uppercase text-fx-neutral-200">{{ currencies.length }} Currencies &middot; Daily &middot; Frankfurter</p>
   </header>
 </template>
 

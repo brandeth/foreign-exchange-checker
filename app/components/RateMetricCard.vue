@@ -3,9 +3,11 @@ withDefaults(defineProps<{
   label: string
   value: string
   increase?: boolean
+  decrease?: boolean
   showIndicator?: boolean
 }>(), {
   increase: false,
+  decrease: false,
   showIndicator: false,
 })
 </script>
@@ -15,9 +17,9 @@ withDefaults(defineProps<{
     <dt class="rate-metric-card__label">{{ label }}</dt>
     <dd
       class="rate-metric-card__value"
-      :class="{ 'rate-metric-card__value--increase': increase }"
+      :class="{ 'rate-metric-card__value--increase': increase, 'rate-metric-card__value--decrease': decrease }"
     >
-      <span v-if="showIndicator" aria-hidden="true">▲</span>
+      <span v-if="showIndicator && (increase || decrease)" aria-hidden="true">{{ decrease ? '▼' : '▲' }}</span>
       <span>{{ value }}</span>
     </dd>
   </dl>
@@ -40,6 +42,10 @@ withDefaults(defineProps<{
 
 .rate-metric-card__value--increase {
   @apply text-fx-green-500;
+}
+
+.rate-metric-card__value--decrease {
+  @apply text-fx-red-500;
 }
 
 @media (max-width: 639px) {
