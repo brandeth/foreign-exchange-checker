@@ -2,6 +2,7 @@
 import exchangeIcon from '~/assets/images/exchange-icon.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import verticalExchangeIcon from '~/assets/images/vertical-exchange-icon.svg'
+import type { ExchangeRatesResponse } from '../../shared/exchangeRates'
 
 const props = withDefaults(defineProps<{
   sendAmount?: string
@@ -13,10 +14,15 @@ const props = withDefaults(defineProps<{
   receiveCurrency: 'EUR',
 })
 
+const { data: rates, loading, error: rateError, stale, refresh } = useExchangeRates(
+  () => $fetch<ExchangeRatesResponse>('/api/exchange-rates'),
+)
+onMounted(() => { void refresh() })
+
 const {
   sendAmount, sendCurrency, receiveCurrency, amountError,
-  formattedReceiveAmount, result, swapCurrencies,
-} = useConverter(props.sendAmount, props.sendCurrency, props.receiveCurrency)
+  formattedReceiveAmount, result, rateDates, swapCurrencies,
+} = useConverter(props.sendAmount, props.sendCurrency, props.receiveCurrency, rates)
 const converterId = useId()
 const isFavorited = ref(true)
 </script>
@@ -69,8 +75,17 @@ const isFavorited = ref(true)
 
       <div class="check-rate__footer">
         <div class="check-rate__result">
-          <p>{{ result }}</p>
-          <p class="mt-2 text-fx-neutral-200">Sample rates · For demonstration only</p>
+          <p>{{ loading && !rates && sendCurrency !== receiveCurrency ? 'Loading exchange rates…' : result }}</p>
+          <p v-if="rates" class="mt-2 text-fx-neutral-200">
+            Daily rates from <a href="https://frankfurter.dev/" target="_blank" rel="noopener noreferrer" class="underline">Frankfurter</a>
+          </p>
+          <p v-if="rateDates" class="mt-2 text-fx-neutral-200">{{ sendCurrency !== receiveCurrency ? 'Rate dates · ' : '' }}{{ rateDates }}</p>
+          <p v-if="rates" class="mt-2 text-fx-neutral-200">Last fetched: {{ rates.fetchedAt.replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC') }}</p>
+          <div role="status" aria-live="polite" class="mt-2">
+            <p v-if="rateError || stale" class="text-fx-red-500">{{ rateError || 'Could not refresh rates. Showing cached rates.' }}</p>
+            <p v-if="loading && rates" class="text-fx-neutral-200">Refreshing rates…</p>
+          </div>
+          <Button v-if="rateError || stale" class="mt-2" :disabled="loading" @click="refresh">{{ loading ? 'Retrying…' : 'Retry' }}</Button>
           <p :id="`${converterId}-feedback`" aria-live="polite" :class="{ 'mt-2 text-fx-red-500': amountError }">{{ amountError }}</p>
         </div>
 
