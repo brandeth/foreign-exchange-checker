@@ -1,6 +1,20 @@
-# Nuxt Minimal Starter
+# Foreign Exchange Checker
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+The converter fetches daily exchange rates from [Frankfurter v2](https://frankfurter.dev/). No API key is needed.
+
+## Converter rates
+
+- `GET /api/exchange-rates` requests USD-based rates for the currencies in the converter dropdowns. Amount edits and currency swaps calculate locally without extra requests.
+- Successful responses are cached for one hour per server instance. Concurrent requests share one refresh. The in-memory cache resets on restart and is not shared across instances.
+- If refreshing fails, the endpoint returns the previous successful rates marked as stale. Without cached rates, it returns HTTP 503. The converter offers a retry and retains previously fetched results.
+- Rate dates describe the underlying observations; `fetchedAt` describes when this server retrieved them. Cross-currency conversions show both source dates, which can differ. Missing currencies remain unavailable instead of using sample values.
+- This integration requires a Nuxt server deployment (`npm run build`); static-only hosting cannot serve the API route. The chart and market ticker still use their existing data.
+
+Run the tests with Node.js 22.18+ or 24+:
+
+```bash
+npm test
+```
 
 ## Setup
 
