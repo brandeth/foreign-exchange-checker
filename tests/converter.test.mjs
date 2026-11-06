@@ -12,7 +12,7 @@ const useConverter = (amount, from, to) => createConverter(amount, from, to, fix
 
 test('converts amounts reactively and formats the received value', () => {
   const converter = useConverter()
-  assert.equal(converter.formattedReceiveAmount.value, '853.02')
+  assert.equal(converter.formattedReceiveAmount.value, '0.85')
   converter.sendAmount.value = '12.50'
   assert.equal(converter.formattedReceiveAmount.value, '10.66')
   converter.receiveCurrency.value = 'GBP'

@@ -21,6 +21,7 @@ withDefaults(defineProps<{
   amountLabel: '1,000 from USD',
   pairCountLabel: '8 pairs',
 })
+const emit = defineEmits<{ 'toggle-favorite': [currency: string] }>()
 </script>
 
 <template>
@@ -56,8 +57,9 @@ withDefaults(defineProps<{
           icon-only
           variant="favorite"
           :pressed="item.favorited"
-          :aria-label="`${item.favorited ? 'Remove' : 'Add'} ${item.code} from favorites`"
+          :aria-label="`${item.favorited ? 'Remove' : 'Add'} ${item.code} ${item.favorited ? 'from' : 'to'} favorites`"
           class="comparison-card__favorite"
+          @click="emit('toggle-favorite', item.code)"
         >
           <img :src="item.favorited ? starFilledIcon : starIcon" alt="">
         </Button>

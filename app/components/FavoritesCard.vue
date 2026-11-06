@@ -7,7 +7,7 @@ export type FavoritePair = {
   fromCurrency: string
   toCurrency: string
   exchangeRate: string
-  priceChange: string
+  priceChange?: string
   increase?: boolean
 }
 
@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<{
 })
 
 const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.length} favorites`)
+const emit = defineEmits<{ remove: [item: FavoritePair] }>()
 </script>
 
 <template>
@@ -46,6 +47,7 @@ const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.leng
           <div class="favorites-card__rate">
             <p class="favorites-card__value">{{ item.exchangeRate }}</p>
             <p
+              v-if="item.priceChange"
               class="favorites-card__change"
               :class="item.increase ? 'favorites-card__change--increase' : 'favorites-card__change--decrease'"
             >
@@ -60,6 +62,7 @@ const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.leng
             pressed
             :aria-label="`Remove ${item.fromCurrency} to ${item.toCurrency} from favorites`"
             class="favorites-card__favorite"
+            @click="emit('remove', item)"
           >
             <img :src="starFilledIcon" alt="">
           </Button>
