@@ -3,6 +3,7 @@ import exchangeIcon from '~/assets/images/exchange-icon.svg'
 import starFilledIcon from '~/assets/images/star-filled.svg'
 import verticalExchangeIcon from '~/assets/images/vertical-exchange-icon.svg'
 import type { ExchangeRatesResponse } from '../../shared/exchangeRates'
+import type { ConversionSnapshot } from '#shared/conversionLog'
 
 const props = withDefaults(defineProps<{
   sendAmount?: string
@@ -21,16 +22,25 @@ onMounted(() => { void refresh() })
 
 const {
   sendAmount, sendCurrency, receiveCurrency, amountError,
-  formattedReceiveAmount, result, rateDates, swapCurrencies,
+  formattedReceiveAmount, result, rateDates, swapCurrencies, conversionSnapshot,
 } = useConverter(props.sendAmount, props.sendCurrency, props.receiveCurrency, rates)
 const emit = defineEmits<{
   'pair-change': [pair: { base: string; quote: string }]
+  'log-conversion': [conversion: ConversionSnapshot]
 }>()
 watch([sendCurrency, receiveCurrency], ([base, quote]) => {
   emit('pair-change', { base, quote })
 }, { immediate: true })
 const converterId = useId()
 const isFavorited = ref(true)
+const logMessage = ref('')
+const canLog = computed(() => !loading.value && conversionSnapshot.value !== null)
+function logConversion() {
+  if (!canLog.value || !conversionSnapshot.value) return
+  emit('log-conversion', { ...conversionSnapshot.value, stale: stale.value })
+  logMessage.value = 'Conversion added to the Log tab.'
+}
+watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = '' })
 </script>
 
 <template>
@@ -93,6 +103,7 @@ const isFavorited = ref(true)
           </div>
           <Button v-if="rateError || stale" class="mt-2" :disabled="loading" @click="refresh">{{ loading ? 'Retrying…' : 'Retry' }}</Button>
           <p :id="`${converterId}-feedback`" aria-live="polite" :class="{ 'mt-2 text-fx-red-500': amountError }">{{ amountError }}</p>
+          <p class="mt-2 text-fx-neutral-200" role="status">{{ logMessage }}</p>
         </div>
 
         <div class="check-rate__actions">
@@ -105,7 +116,7 @@ const isFavorited = ref(true)
             <img :src="starFilledIcon" alt="">
             {{ isFavorited ? 'Favorited' : 'Favorite' }}
           </Button>
-          <Button>Log Conversion</Button>
+          <Button :disabled="!canLog" @click="logConversion">Log Conversion</Button>
         </div>
       </div>
     </div>

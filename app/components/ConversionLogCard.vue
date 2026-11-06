@@ -10,6 +10,8 @@ export type ConversionLogItem = {
   toCurrency: string
   fromAmount: string
   toAmount: string
+  createdAt?: string
+  stale?: boolean
 }
 
 const props = withDefaults(defineProps<{
@@ -53,12 +55,13 @@ const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.leng
         :key="item.id"
         class="conversion-log-card__item"
       >
-        <time class="conversion-log-card__time">{{ item.timestampLabel }}</time>
+        <time class="conversion-log-card__time" :datetime="item.createdAt" :title="item.createdAt ? new Date(item.createdAt).toLocaleString() : undefined">{{ item.timestampLabel }}</time>
 
         <div class="conversion-log-card__pair">
           <span>{{ item.fromCurrency }}</span>
           <img class="conversion-log-card__arrow" :src="arrowRightIcon" alt="">
           <span>{{ item.toCurrency }}</span>
+          <span v-if="item.stale" class="text-preset-6 text-fx-neutral-200" title="Saved using previously fetched rates">Cached rate</span>
         </div>
 
         <p class="conversion-log-card__amount conversion-log-card__amount--source">
