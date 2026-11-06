@@ -1,5 +1,6 @@
 import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue'
 import { converterCurrencies, type ExchangeRatesResponse } from '#shared/exchangeRates.ts'
+import type { ConversionSnapshot } from '#shared/conversionLog.ts'
 
 export function useConverter(
   initialAmount = '1000', initialFrom = 'USD', initialTo = 'EUR',
@@ -47,12 +48,25 @@ export function useConverter(
     ? 'Rate unavailable for this currency pair.'
     : `1 ${sendCurrency.value} = ${exchangeRate.value.toFixed(4)} ${receiveCurrency.value}`)
 
+  const conversionSnapshot = computed<ConversionSnapshot | null>(() => {
+    if (receiveAmount.value === null || !Number.isFinite(receiveAmount.value) || exchangeRate.value === null) return null
+    return {
+      fromCurrency: sendCurrency.value,
+      toCurrency: receiveCurrency.value,
+      fromAmount: new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 20 }).format(Number(sendAmount.value)),
+      toAmount: formattedReceiveAmount.value,
+      exchangeRate: exchangeRate.value,
+      rateDates: rateDates.value,
+      stale: toValue(rates)?.stale ?? false,
+    }
+  })
+
   function swapCurrencies() {
     [sendCurrency.value, receiveCurrency.value] = [receiveCurrency.value, sendCurrency.value]
   }
 
   return {
     sendAmount, sendCurrency, receiveCurrency, amountError, exchangeRate,
-    receiveAmount, formattedReceiveAmount, result, rateDates, swapCurrencies,
+    receiveAmount, formattedReceiveAmount, result, rateDates, swapCurrencies, conversionSnapshot,
   }
 }

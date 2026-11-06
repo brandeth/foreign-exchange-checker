@@ -19,6 +19,13 @@ The converter fetches daily exchange rates from [Frankfurter v2](https://frankfu
 - The server caches histories for one hour per pair, range, and UTC day, with up to 128 entries per instance. A failed refresh can return that query's cached history with a warning. Switching selections clears the old chart immediately, and late responses cannot replace the current selection.
 - Same-currency pairs show a constant rate of 1 without requesting history from the provider.
 
+## Conversion log
+
+- Log Conversion saves the currently displayed amounts, currencies, exchange rate, rate dates, and save timestamp, then opens the Log tab. Entries appear newest first; editing the converter does not change saved entries.
+- Logging is disabled while rates are loading or no valid conversion is available. Conversions saved using cached fallback rates are marked in the log.
+- Entries remain available when navigating within the app. They are held in page-session memory and reset on refresh or close; no conversion log is sent to a server or stored on disk.
+- The log starts empty. Individual entries can be deleted, or Clear All can remove every entry.
+
 Run the tests with Node.js 22.18+ or 24+:
 
 ```bash

@@ -14,20 +14,21 @@ import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
 import type { HistoryRange, RateHistoryResponse } from '#shared/rateHistory'
+import type { ConversionSnapshot, LoggedConversion } from '#shared/conversionLog'
 
 const activeMarketTab = ref('history')
 const selectedTimeRange = ref('1m')
 
-const conversionLogs = ref<ConversionLogItem[]>([
-  { id: 'log-1', timestampLabel: '20m', fromCurrency: 'USD', toCurrency: 'EUR', fromAmount: '1,000.00', toAmount: '853.02' },
-  { id: 'log-2', timestampLabel: '34m', fromCurrency: 'EUR', toCurrency: 'JPY', fromAmount: '500.00', toAmount: '92,490' },
-  { id: 'log-3', timestampLabel: '50m', fromCurrency: 'GBP', toCurrency: 'USD', fromAmount: '250.00', toAmount: '339.38' },
-  { id: 'log-4', timestampLabel: '1h', fromCurrency: 'USD', toCurrency: 'GBP', fromAmount: '1,500.00', toAmount: '1,104.95' },
-  { id: 'log-5', timestampLabel: '2h', fromCurrency: 'BDT', toCurrency: 'USD', fromAmount: '50,000', toAmount: '406.77' },
-  { id: 'log-6', timestampLabel: '4h', fromCurrency: 'EUR', toCurrency: 'INR', fromAmount: '100.00', toAmount: '11,127.43' },
-  { id: 'log-7', timestampLabel: '13 May', fromCurrency: 'AUD', toCurrency: 'USD', fromAmount: '2,000.00', toAmount: '1,441.60' },
-  { id: 'log-8', timestampLabel: '11 May', fromCurrency: 'CHF', toCurrency: 'USD', fromAmount: '750.00', toAmount: '824.36' },
-])
+const logEntries = useState<LoggedConversion[]>('conversion-log', () => [])
+const { entries, add: addConversionLog, remove: removeConversionLog, clear: clearConversionLogs } = useConversionLog(logEntries)
+const conversionLogs = computed<ConversionLogItem[]>(() => entries.value.map(entry => ({
+  ...entry,
+  timestampLabel: new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(entry.createdAt)),
+})))
+function logConversion(snapshot: ConversionSnapshot) {
+  addConversionLog(snapshot)
+  activeMarketTab.value = 'log'
+}
 
 const marketTabs = computed(() => [
   { label: 'History', value: 'history' },
@@ -69,14 +70,6 @@ const favoritePairs: FavoritePair[] = [
   { fromCurrency: 'USD', toCurrency: 'TRY', exchangeRate: '38.642', priceChange: '+0.54%', increase: true },
 ]
 
-function removeConversionLog(id: string) {
-  conversionLogs.value = conversionLogs.value.filter(item => item.id !== id)
-}
-
-function clearConversionLogs() {
-  conversionLogs.value = []
-}
-
 const selectedPair = ref({ base: 'USD', quote: 'EUR' })
 const { data: history, loading: historyLoading, error: historyError, points: rateChartPoints, metrics, load: loadHistory } = useRateHistory(
   query => $fetch<RateHistoryResponse>('/api/rate-history', { query }),
@@ -97,7 +90,7 @@ watch(historyQuery, refreshHistory)
 <template>
   <main class="home-page min-h-screen bg-fx-neutral-900 px-6 py-9 text-fx-neutral-50">
     <div class="home-page__content mx-auto flex max-w-[1036px] flex-col gap-12">
-      <CheckRate @pair-change="updatePair" />
+      <CheckRate @pair-change="updatePair" @log-conversion="logConversion" />
 
       <section class="market-history" aria-label="Exchange market views">
         <Tabs
@@ -173,7 +166,7 @@ watch(historyQuery, refreshHistory)
           <p class="market-view__empty-title">No conversions logged yet</p>
           <p class="market-view__empty-message">
             Every conversion is recorded here automatically when you tap LOG CONVERSION.<br>
-            Your log is private to this session and this browser.
+            Logs stay in this app until you refresh or close the page.
           </p>
         </div>
       </section>
