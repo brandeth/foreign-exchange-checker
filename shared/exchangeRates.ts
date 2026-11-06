@@ -9,3 +9,10 @@ export type ExchangeRatesResponse = {
   cached: boolean
   stale: boolean
 }
+
+export function getPairRate(from: string, to: string, rates?: ExchangeRatesResponse['rates']): number | null {
+  if (from === to) return 1
+  const fromRate = rates?.[from]?.rate
+  const toRate = rates?.[to]?.rate
+  return fromRate && toRate ? toRate / fromRate : null
+}

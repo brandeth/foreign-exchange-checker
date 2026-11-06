@@ -1,3 +1,5 @@
+import { getTimeZoneRegion } from './timeZoneRegions.ts'
+
 export type Currency = { code: string; name: string; country: string; flag: string }
 
 // One catalogue drives dropdowns, conversions, and history validation.
@@ -62,6 +64,33 @@ export const currencies: Currency[] = [
 
 export const converterCurrencies = currencies.map(currency => currency.code)
 export const popularCurrencyCodes = ['USD', 'EUR', 'GBP']
+
+const euroRegions = new Set('AD AT BE BG CY DE EE ES FI FR GR HR IE IT LT LU LV MC ME MT NL PT SI SK SM VA XK'.split(' '))
+const eastCaribbeanRegions = new Set('AG AI DM GD KN LC MS VC'.split(' '))
+
+export function getCurrencyForRegion(region: string): string | undefined {
+  if (euroRegions.has(region)) return 'EUR'
+  if (eastCaribbeanRegions.has(region)) return 'XCD'
+  if (region === 'LI') return 'CHF'
+  return currencies.find(currency => currency.flag === region.toLowerCase())?.code
+}
+
+export function getRegionalCurrency(locales: readonly string[], timeZone?: string): string | undefined {
+  const timeZoneRegion = timeZone && getTimeZoneRegion(timeZone)
+  if (timeZoneRegion) return getCurrencyForRegion(timeZoneRegion)
+
+  for (const locale of locales) {
+    let region: string | undefined
+    try {
+      region = new Intl.Locale(locale).region
+    } catch {
+      continue
+    }
+    if (!region) continue
+    const currency = getCurrencyForRegion(region)
+    if (currency) return currency
+  }
+}
 
 function normalizeSearch(value: string) {
   return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()

@@ -1,9 +1,9 @@
 import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue'
-import { converterCurrencies, type ExchangeRatesResponse } from '#shared/exchangeRates.ts'
+import { converterCurrencies, getPairRate, type ExchangeRatesResponse } from '#shared/exchangeRates.ts'
 import type { ConversionSnapshot } from '#shared/conversionLog.ts'
 
 export function useConverter(
-  initialAmount = '1000', initialFrom = 'USD', initialTo = 'EUR',
+  initialAmount = '1', initialFrom = 'USD', initialTo = 'EUR',
   rates?: MaybeRefOrGetter<ExchangeRatesResponse | null | undefined>,
 ) {
   const sendAmount = ref(initialAmount.replaceAll(',', ''))
@@ -23,11 +23,7 @@ export function useConverter(
   const exchangeRate = computed(() => {
     if (!converterCurrencies.some(code => code === sendCurrency.value)
       || !converterCurrencies.some(code => code === receiveCurrency.value)) return null
-    if (sendCurrency.value === receiveCurrency.value) return 1
-    const table = toValue(rates)?.rates
-    const from = table?.[sendCurrency.value]?.rate
-    const to = table?.[receiveCurrency.value]?.rate
-    return from && to ? to / from : null
+    return getPairRate(sendCurrency.value, receiveCurrency.value, toValue(rates)?.rates)
   })
   const rateDates = computed(() => {
     if (sendCurrency.value === receiveCurrency.value) return 'Same currency · No exchange rate needed'

@@ -15,12 +15,57 @@ import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
 import type { HistoryRange, RateHistoryResponse } from '#shared/rateHistory'
 import type { ConversionSnapshot, LoggedConversion } from '#shared/conversionLog'
+import { converterCurrencies } from '#shared/currencies'
+import { getPairRate, type ExchangeRatesResponse } from '#shared/exchangeRates'
 
 const activeMarketTab = ref('history')
 const selectedTimeRange = ref('1m')
+type CurrencyPair = { base: string; quote: string }
+const selectedPair = ref<CurrencyPair>({ base: 'USD', quote: 'EUR' })
+const favoritePairs = ref<CurrencyPair[]>([])
+const favoriteStorageKey = 'foreign-exchange-checker:favorite-pairs'
+const latestRates = shallowRef<ExchangeRatesResponse | null>(null)
+
+function isCurrencyPair(value: unknown): value is CurrencyPair {
+  if (typeof value !== 'object' || value === null) return false
+  const { base, quote } = value as Partial<CurrencyPair>
+  return typeof base === 'string' && typeof quote === 'string'
+    && converterCurrencies.includes(base) && converterCurrencies.includes(quote)
+}
+
+onMounted(() => {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(favoriteStorageKey) ?? 'null')
+    if (Array.isArray(saved)) favoritePairs.value = saved.filter(isCurrencyPair)
+  } catch {
+    // Favorites can still be used for the current visit.
+  }
+})
+
+function isFavorite({ base, quote }: CurrencyPair) {
+  return favoritePairs.value.some(pair => pair.base === base && pair.quote === quote)
+}
+
+function toggleFavorite(pair: CurrencyPair) {
+  favoritePairs.value = isFavorite(pair)
+    ? favoritePairs.value.filter(({ base, quote }) => base !== pair.base || quote !== pair.quote)
+    : [pair, ...favoritePairs.value]
+  try {
+    localStorage.setItem(favoriteStorageKey, JSON.stringify(favoritePairs.value))
+  } catch {
+    // Keep the updated list in memory when storage is unavailable.
+  }
+}
+
+const favoriteItems = computed<FavoritePair[]>(() => favoritePairs.value.map(({ base, quote }) => ({
+  fromCurrency: base,
+  toCurrency: quote,
+  exchangeRate: getPairRate(base, quote, latestRates.value?.rates)?.toFixed(4) ?? '—',
+})))
 
 const logEntries = useState<LoggedConversion[]>('conversion-log', () => [])
-const { entries, add: addConversionLog, remove: removeConversionLog, clear: clearConversionLogs } = useConversionLog(logEntries)
+const { entries, restore: restoreConversionLogs, add: addConversionLog, remove: removeConversionLog, clear: clearConversionLogs } = useConversionLog(logEntries)
+onMounted(() => restoreConversionLogs())
 const conversionLogs = computed<ConversionLogItem[]>(() => entries.value.map(entry => ({
   ...entry,
   timestampLabel: new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(entry.createdAt)),
@@ -33,7 +78,7 @@ function logConversion(snapshot: ConversionSnapshot) {
 const marketTabs = computed(() => [
   { label: 'History', value: 'history' },
   { label: 'Compare', value: 'compare' },
-  { label: 'Favorites', value: 'favorites', badge: favoritePairs.length },
+  { label: 'Favorites', value: 'favorites', badge: favoritePairs.value.length },
   { label: 'Log', value: 'log', badge: conversionLogs.value.length },
 ])
 
@@ -47,30 +92,20 @@ const timeRanges = [
 ]
 
 const comparisonItems = [
-  { code: 'GBP', name: 'British Pound', flagSrc: gbpFlag, value: '736.65', rate: '0.7366', favorited: true },
-  { code: 'JPY', name: 'Japanese Yen', flagSrc: jpyFlag, value: '157,910', rate: '157.91', favorited: true },
+  { code: 'GBP', name: 'British Pound', flagSrc: gbpFlag, value: '736.65', rate: '0.7366' },
+  { code: 'JPY', name: 'Japanese Yen', flagSrc: jpyFlag, value: '157,910', rate: '157.91' },
   { code: 'CHF', name: 'Swiss Franc', flagSrc: chfFlag, value: '909.80', rate: '0.9098' },
   { code: 'CAD', name: 'Canadian Dollar', flagSrc: cadFlag, value: '1,381.50', rate: '1.3815' },
   { code: 'AUD', name: 'Australian Dollar', flagSrc: audFlag, value: '1,387.35', rate: '1.3874' },
-  { code: 'INR', name: 'Indian Rupee', flagSrc: inrFlag, value: '94,910.00', rate: '94.910', favorited: true },
+  { code: 'INR', name: 'Indian Rupee', flagSrc: inrFlag, value: '94,910.00', rate: '94.910' },
   { code: 'CNY', name: 'Chinese Yuan', flagSrc: cnyFlag, value: '7,210.00', rate: '7.2100' },
-  { code: 'BDT', name: 'Bangladeshi Taka', flagSrc: bdtFlag, value: '122,920', rate: '122.92', favorited: true },
+  { code: 'BDT', name: 'Bangladeshi Taka', flagSrc: bdtFlag, value: '122,920', rate: '122.92' },
 ]
 
-const favoritePairs: FavoritePair[] = [
-  { fromCurrency: 'USD', toCurrency: 'EUR', exchangeRate: '0.8530', priceChange: '+0.16%', increase: true },
-  { fromCurrency: 'GBP', toCurrency: 'USD', exchangeRate: '1.3575', priceChange: '-0.22%' },
-  { fromCurrency: 'USD', toCurrency: 'JPY', exchangeRate: '157.91', priceChange: '+0.04%', increase: true },
-  { fromCurrency: 'USD', toCurrency: 'BDT', exchangeRate: '122.92', priceChange: '+0.18%', increase: true },
-  { fromCurrency: 'EUR', toCurrency: 'GBP', exchangeRate: '0.8633', priceChange: '+0.11%', increase: true },
-  { fromCurrency: 'AUD', toCurrency: 'NZD', exchangeRate: '1.2217', priceChange: '+0.23%', increase: true },
-  { fromCurrency: 'USD', toCurrency: 'INR', exchangeRate: '94.910', priceChange: '+0.05%', increase: true },
-  { fromCurrency: 'EUR', toCurrency: 'CHF', exchangeRate: '1.0668', priceChange: '-0.15%' },
-  { fromCurrency: 'GBP', toCurrency: 'JPY', exchangeRate: '213.21', priceChange: '+0.13%', increase: true },
-  { fromCurrency: 'USD', toCurrency: 'TRY', exchangeRate: '38.642', priceChange: '+0.54%', increase: true },
-]
-
-const selectedPair = ref({ base: 'USD', quote: 'EUR' })
+const comparisonRows = computed(() => comparisonItems.map(item => ({
+  ...item,
+  favorited: isFavorite({ base: 'USD', quote: item.code }),
+})))
 const { data: history, loading: historyLoading, error: historyError, points: rateChartPoints, metrics, load: loadHistory } = useRateHistory(
   query => $fetch<RateHistoryResponse>('/api/rate-history', { query }),
 )
@@ -79,7 +114,7 @@ const chartPair = computed(() => selectedPair.value.base + '/' + selectedPair.va
 function refreshHistory() {
   return loadHistory(historyQuery.value)
 }
-function updatePair(pair: { base: string; quote: string }) {
+function updatePair(pair: CurrencyPair) {
   if (pair.base !== selectedPair.value.base || pair.quote !== selectedPair.value.quote) selectedPair.value = pair
 }
 onMounted(refreshHistory)
@@ -90,7 +125,13 @@ watch(historyQuery, refreshHistory)
 <template>
   <main class="home-page min-h-screen bg-fx-neutral-900 px-6 py-9 text-fx-neutral-50">
     <div class="home-page__content mx-auto flex max-w-[1036px] flex-col gap-12">
-      <CheckRate @pair-change="updatePair" @log-conversion="logConversion" />
+      <CheckRate
+        :favorited="isFavorite(selectedPair)"
+        @pair-change="updatePair"
+        @rates-change="latestRates = $event"
+        @toggle-favorite="toggleFavorite(selectedPair)"
+        @log-conversion="logConversion"
+      />
 
       <section class="market-history" aria-label="Exchange market views">
         <Tabs
@@ -131,7 +172,8 @@ watch(historyQuery, refreshHistory)
 
         <ComparisonCard
           v-else-if="activeMarketTab === 'compare' && comparisonItems.length"
-          :items="comparisonItems"
+          :items="comparisonRows"
+          @toggle-favorite="toggleFavorite({ base: 'USD', quote: $event })"
         />
 
         <div v-else-if="activeMarketTab === 'compare'" class="market-view__empty" role="status">
@@ -144,7 +186,8 @@ watch(historyQuery, refreshHistory)
 
         <FavoritesCard
           v-else-if="activeMarketTab === 'favorites' && favoritePairs.length"
-          :items="favoritePairs"
+          :items="favoriteItems"
+          @remove="toggleFavorite({ base: $event.fromCurrency, quote: $event.toCurrency })"
         />
 
         <div v-else-if="activeMarketTab === 'favorites'" class="market-view__empty" role="status">
@@ -169,22 +212,6 @@ watch(historyQuery, refreshHistory)
             Logs stay in this app until you refresh or close the page.
           </p>
         </div>
-      </section>
-
-      <section class="hidden flex-col gap-6 border-t border-fx-neutral-400 pt-8 sm:flex">
-        <div class="flex flex-col gap-4">
-          <p class="text-preset-5-medium uppercase text-fx-lime-500">Foreign Exchange Checker</p>
-          <h1 class="text-preset-1-tablet md:text-preset-1 max-w-3xl">
-            Build interface primitives from a visible token baseline.
-          </h1>
-        </div>
-
-        <NuxtLink
-          to="/design-system"
-          class="text-preset-3-medium inline-flex w-fit items-center justify-center border border-fx-lime-500 bg-fx-lime-500 px-5 py-3 text-fx-neutral-900 transition hover:bg-fx-neutral-900 hover:text-fx-lime-500 focus:outline-2 focus:outline-offset-4 focus:outline-fx-lime-500"
-        >
-          Open Design System
-        </NuxtLink>
       </section>
     </div>
   </main>

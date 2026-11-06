@@ -62,3 +62,29 @@ test('cached rate status is captured with the conversion', () => {
   const converter = useConverter('100', 'USD', 'PHP', { ...rates, stale: true })
   assert.equal(converter.conversionSnapshot.value.stale, true)
 })
+
+test('restores saved conversions and persists deletions and clearing across reloads', () => {
+  const data = new Map()
+  const storage = {
+    getItem: key => data.get(key) ?? null,
+    setItem: (key, value) => data.set(key, value),
+  }
+  function loadLog() {
+    const log = useConversionLog()
+    log.restore(() => storage)
+    return log
+  }
+
+  const log = loadLog()
+  const snapshot = useConverter('100', 'USD', 'PHP', rates).conversionSnapshot.value
+  log.add(snapshot)
+  log.add(snapshot)
+
+  const reloaded = loadLog()
+  assert.deepEqual(reloaded.entries.value, log.entries.value)
+  reloaded.remove(log.entries.value[0].id)
+  assert.deepEqual(loadLog().entries.value, [log.entries.value[1]])
+
+  reloaded.clear()
+  assert.deepEqual(loadLog().entries.value, [])
+})
