@@ -3,6 +3,7 @@ import test from 'node:test'
 import { ref, shallowRef } from 'vue'
 import { useConverter } from '../app/composables/useConverter.ts'
 import { useConversionLog } from '../app/composables/useConversionLog.ts'
+import { groupConversionsByDate } from '../shared/conversionLog.ts'
 
 const rates = {
   rates: { USD: { rate: 1, date: null }, PHP: { rate: 63.49, date: '2026-11-05' } },
@@ -61,6 +62,19 @@ test('logs newest first with distinct IDs and exact timestamps, including repeat
 test('cached rate status is captured with the conversion', () => {
   const converter = useConverter('100', 'USD', 'PHP', { ...rates, stale: true })
   assert.equal(converter.conversionSnapshot.value.stale, true)
+})
+
+test('groups conversions at local midnight and keeps the newest entries first', () => {
+  const later = { id: 'later', createdAt: new Date(2026, 10, 7, 23, 59).toISOString() }
+  const midnight = { id: 'midnight', createdAt: new Date(2026, 10, 7).toISOString() }
+  const previousDay = { id: 'previous-day', createdAt: new Date(2026, 10, 6, 23, 59).toISOString() }
+  const undated = { id: 'undated' }
+
+  assert.deepEqual(groupConversionsByDate([later, midnight, previousDay, undated]), [
+    { dateLabel: '7 November 2026', items: [later, midnight] },
+    { dateLabel: '6 November 2026', items: [previousDay] },
+    { dateLabel: null, items: [undated] },
+  ])
 })
 
 test('restores saved conversions and persists deletions and clearing across reloads', () => {
