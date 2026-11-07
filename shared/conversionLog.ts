@@ -13,6 +13,10 @@ export type LoggedConversion = ConversionSnapshot & {
   createdAt: string
 }
 
+export function conversionPairLabel({ fromCurrency, toCurrency }: Pick<ConversionSnapshot, 'fromCurrency' | 'toCurrency'>) {
+  return `${fromCurrency} → ${toCurrency}`
+}
+
 const logDateFormatter = new Intl.DateTimeFormat('en-GB', { dateStyle: 'long' })
 
 export function groupConversionsByDate<T extends { createdAt?: string }>(entries: readonly T[]) {
