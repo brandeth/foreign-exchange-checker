@@ -77,10 +77,10 @@ const comparisonItems = [
 ]
 
 const conversionLogs = ref([
-  { id: 'demo-log-1', timestampLabel: '20m', fromCurrency: 'USD', toCurrency: 'EUR', fromAmount: '1,000.00', toAmount: '853.02' },
-  { id: 'demo-log-2', timestampLabel: '34m', fromCurrency: 'EUR', toCurrency: 'JPY', fromAmount: '500.00', toAmount: '92,490' },
-  { id: 'demo-log-3', timestampLabel: '1h', fromCurrency: 'USD', toCurrency: 'GBP', fromAmount: '1,500.00', toAmount: '1,104.95' },
-  { id: 'demo-log-4', timestampLabel: '13 May', fromCurrency: 'AUD', toCurrency: 'USD', fromAmount: '2,000.00', toAmount: '1,441.60' },
+  { id: 'demo-log-1', createdAt: '2026-05-14T15:40:00', timestampLabel: '15:40', fromCurrency: 'USD', toCurrency: 'EUR', fromAmount: '1,000.00', toAmount: '853.02' },
+  { id: 'demo-log-2', createdAt: '2026-05-14T15:26:00', timestampLabel: '15:26', fromCurrency: 'EUR', toCurrency: 'JPY', fromAmount: '500.00', toAmount: '92,490' },
+  { id: 'demo-log-3', createdAt: '2026-05-14T15:00:00', timestampLabel: '15:00', fromCurrency: 'USD', toCurrency: 'GBP', fromAmount: '1,500.00', toAmount: '1,104.95' },
+  { id: 'demo-log-4', createdAt: '2026-05-13T16:00:00', timestampLabel: '16:00', fromCurrency: 'AUD', toCurrency: 'USD', fromAmount: '2,000.00', toAmount: '1,441.60' },
 ])
 
 function removeConversionLog(id: string) {

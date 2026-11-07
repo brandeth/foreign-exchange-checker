@@ -2,6 +2,7 @@
 import arrowRightIcon from '~/assets/images/arrow-right.svg'
 import deleteFilledIcon from '~/assets/images/delete-filled.svg'
 import deleteIcon from '~/assets/images/delete.svg'
+import { groupConversionsByDate } from '#shared/conversionLog'
 
 export type ConversionLogItem = {
   id: string
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 }>()
 
 const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.length} logged`)
+const dateGroups = computed(() => groupConversionsByDate(props.items))
 </script>
 
 <template>
@@ -49,45 +51,51 @@ const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.leng
       </div>
     </header>
 
-    <ul v-if="items.length" class="conversion-log-card__list" aria-label="Conversion log entries">
-      <li
-        v-for="item in items"
-        :key="item.id"
-        class="conversion-log-card__item"
-      >
-        <time class="conversion-log-card__time" :datetime="item.createdAt" :title="item.createdAt ? new Date(item.createdAt).toLocaleString() : undefined">{{ item.timestampLabel }}</time>
+    <div v-if="dateGroups.length" class="conversion-log-card__groups">
+      <div v-for="group in dateGroups" :key="group.dateLabel ?? 'undated'" class="conversion-log-card__group">
+        <h4 v-if="group.dateLabel" class="conversion-log-card__date">{{ group.dateLabel }}</h4>
 
-        <div class="conversion-log-card__pair">
-          <span>{{ item.fromCurrency }}</span>
-          <img class="conversion-log-card__arrow" :src="arrowRightIcon" alt="">
-          <span>{{ item.toCurrency }}</span>
-          <span v-if="item.stale" class="text-preset-6 text-fx-neutral-200" title="Saved using previously fetched rates">Cached rate</span>
-        </div>
+        <ul class="conversion-log-card__list" :aria-label="group.dateLabel ?? 'Conversion log entries'">
+          <li
+            v-for="item in group.items"
+            :key="item.id"
+            class="conversion-log-card__item"
+          >
+            <time class="conversion-log-card__time" :datetime="item.createdAt" :title="item.createdAt ? new Date(item.createdAt).toLocaleString('en-GB') : undefined">{{ item.timestampLabel }}</time>
 
-        <p class="conversion-log-card__amount conversion-log-card__amount--source">
-          <span class="sr-only">{{ item.fromCurrency }} amount:</span>
-          {{ item.fromAmount }}
-        </p>
+            <div class="conversion-log-card__pair">
+              <span>{{ item.fromCurrency }}</span>
+              <img class="conversion-log-card__arrow" :src="arrowRightIcon" alt="">
+              <span>{{ item.toCurrency }}</span>
+              <span v-if="item.stale" class="text-preset-6 text-fx-neutral-200" title="Saved using previously fetched rates">Cached rate</span>
+            </div>
 
-        <p class="conversion-log-card__amount conversion-log-card__amount--converted">
-          <span class="sr-only">{{ item.toCurrency }} amount:</span>
-          {{ item.toAmount }}
-        </p>
+            <p class="conversion-log-card__amount conversion-log-card__amount--source">
+              <span class="sr-only">{{ item.fromCurrency }} amount:</span>
+              {{ item.fromAmount }}
+            </p>
 
-        <Button
-          icon-only
-          variant="delete"
-          :aria-label="`Delete ${item.fromCurrency} to ${item.toCurrency} conversion from log`"
-          class="conversion-log-card__delete"
-          @click="emit('remove', item.id)"
-        >
-          <span class="fx-button__icon-stack" aria-hidden="true">
-            <img :src="deleteIcon" alt="" class="fx-button__icon-default">
-            <img :src="deleteFilledIcon" alt="" class="fx-button__icon-hover">
-          </span>
-        </Button>
-      </li>
-    </ul>
+            <p class="conversion-log-card__amount conversion-log-card__amount--converted">
+              <span class="sr-only">{{ item.toCurrency }} amount:</span>
+              {{ item.toAmount }}
+            </p>
+
+            <Button
+              icon-only
+              variant="delete"
+              :aria-label="`Delete ${item.fromCurrency} to ${item.toCurrency} conversion from log`"
+              class="conversion-log-card__delete"
+              @click="emit('remove', item.id)"
+            >
+              <span class="fx-button__icon-stack" aria-hidden="true">
+                <img :src="deleteIcon" alt="" class="fx-button__icon-default">
+                <img :src="deleteFilledIcon" alt="" class="fx-button__icon-hover">
+              </span>
+            </Button>
+          </li>
+        </ul>
+      </div>
+    </div>
 
     <p v-else class="conversion-log-card__empty" aria-live="polite">
       No conversions logged yet.
@@ -116,6 +124,18 @@ const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.leng
 
 .conversion-log-card__count {
   @apply m-0 text-preset-6 uppercase text-fx-neutral-200;
+}
+
+.conversion-log-card__groups {
+  @apply flex flex-col gap-5;
+}
+
+.conversion-log-card__group {
+  @apply flex flex-col gap-3;
+}
+
+.conversion-log-card__date {
+  @apply m-0 text-preset-5-medium text-fx-neutral-100;
 }
 
 .conversion-log-card__list {
