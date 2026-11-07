@@ -260,11 +260,13 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
 }
 
 .check-rate__card {
+  --check-rate-gutter: 1.25rem;
   @apply overflow-hidden rounded-[20px] bg-fx-neutral-700;
 }
 
 .check-rate__fields {
-  @apply grid items-center gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)];
+  @apply grid items-center gap-5 py-5 lg:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)];
+  padding-inline: var(--check-rate-gutter);
 }
 
 .check-rate__field {
@@ -300,19 +302,24 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
 }
 
 .check-rate__footer {
-  @apply border-t border-dashed border-fx-neutral-500 px-5 text-preset-5 sm:px-6;
+  @apply border-t border-dashed border-fx-neutral-500 text-preset-5;
+  padding-inline: var(--check-rate-gutter);
 }
 
 .check-rate__summary {
-  @apply flex flex-col items-start gap-3 py-4 sm:flex-row sm:items-center sm:justify-between;
+  @apply flex flex-col items-center gap-3 py-4 text-center sm:flex-row sm:flex-wrap sm:text-left;
 }
 
 .check-rate__result {
-  @apply text-preset-5 text-fx-neutral-50;
+  @apply min-w-0 break-words text-preset-5 text-fx-neutral-50;
 }
 
 .check-rate__actions {
-  @apply flex flex-wrap items-center gap-3 sm:shrink-0;
+  @apply flex max-w-full flex-wrap items-center justify-center gap-3 sm:ml-auto sm:justify-end;
+}
+
+.check-rate__action-label {
+  @apply leading-4;
 }
 
 .check-rate__details {
@@ -349,11 +356,12 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
   }
 
   .check-rate__card {
+    --check-rate-gutter: 1.5rem;
     @apply rounded-[24px];
   }
 
   .check-rate__fields {
-    @apply gap-6 p-6;
+    @apply gap-6 py-6;
   }
 
   .check-rate__field {
@@ -368,12 +376,8 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
     @apply items-center gap-2.5;
   }
 
-  .check-rate__summary {
-    @apply items-center text-center;
-  }
-
   .check-rate__actions {
-    @apply justify-center gap-2;
+    @apply gap-2;
   }
 
   .check-rate__actions :deep(.fx-button) {
@@ -384,18 +388,18 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
     @apply size-4;
   }
 
-  .check-rate__action-label {
-    @apply leading-4;
-  }
-
   .check-rate__location-button {
     @apply w-full;
   }
 }
 
 @media (max-width: 389px) {
+  .check-rate__card {
+    --check-rate-gutter: 1.25rem;
+  }
+
   .check-rate__fields {
-    @apply p-5;
+    @apply py-5;
   }
 }
 
@@ -409,11 +413,12 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
   }
 
   .check-rate__card {
+    --check-rate-gutter: 1.5rem;
     @apply rounded-[24px];
   }
 
   .check-rate__fields {
-    @apply grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)] gap-7 p-6;
+    @apply grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)] gap-7 py-6;
   }
 
   .check-rate__field {
@@ -425,13 +430,17 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
   }
 
   .check-rate__actions {
-    @apply flex-nowrap gap-4;
+    @apply gap-4;
   }
 }
 
 @media (min-width: 640px) and (max-width: 860px) {
+  .check-rate__card {
+    --check-rate-gutter: 1.25rem;
+  }
+
   .check-rate__fields {
-    @apply grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] gap-4 p-5;
+    @apply grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] gap-4 py-5;
   }
 
   .check-rate__field {
