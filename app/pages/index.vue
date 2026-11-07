@@ -18,6 +18,20 @@ import { conversionPairLabel, type ConversionSnapshot, type LoggedConversion } f
 import { converterCurrencies } from '#shared/currencies'
 import { getPairRate, type ExchangeRatesResponse } from '#shared/exchangeRates'
 
+const pageTitle = 'FX Checker | Currency Converter'
+const pageDescription = 'Convert currencies using daily exchange rates from Frankfurter. Explore rate history, compare observations, and log conversions.'
+
+useSeoMeta({
+  description: pageDescription,
+  ogType: 'website',
+  ogSiteName: 'FX Checker',
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  twitterCard: 'summary',
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+})
+
 const activeMarketTab = ref('history')
 const selectedTimeRange = ref('1m')
 type CurrencyPair = { base: string; quote: string }
