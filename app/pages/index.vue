@@ -208,8 +208,8 @@ watch(historyQuery, refreshHistory)
         <div v-else-if="activeMarketTab === 'log'" class="market-view__empty" role="status">
           <p class="market-view__empty-title">No conversions logged yet</p>
           <p class="market-view__empty-message">
-            Every conversion is recorded here automatically when you tap LOG CONVERSION.<br>
-            Logs stay in this app until you refresh or close the page.
+            Select Log Conversion to save the current conversion.
+            Saved conversions stay in this browser after you refresh or close the page.
           </p>
         </div>
       </section>
