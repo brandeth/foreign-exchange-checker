@@ -19,6 +19,8 @@ import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
 
+useHead({ title: 'Design System | FX Checker' })
+
 const activeTab = ref('history')
 const selectedTimeRange = ref('1m')
 
