@@ -20,6 +20,10 @@ import { getPairRate, type ExchangeRatesResponse } from '#shared/exchangeRates'
 
 const pageTitle = 'FX Checker | Currency Converter'
 const pageDescription = 'Convert currencies using daily exchange rates from Frankfurter. Explore rate history, compare observations, and log conversions.'
+const { baseURL } = useRuntimeConfig().app
+const pageUrl = new URL(`${baseURL.replace(/\/$/, '')}/`, useRequestURL().origin)
+const socialImageUrl = new URL('social-preview.png', pageUrl).href
+const socialImageAlt = 'FX Checker currency converter with a lime exchange-rate history chart.'
 
 useSeoMeta({
   description: pageDescription,
@@ -27,9 +31,17 @@ useSeoMeta({
   ogSiteName: 'FX Checker',
   ogTitle: pageTitle,
   ogDescription: pageDescription,
-  twitterCard: 'summary',
+  ogUrl: pageUrl.href,
+  ogImage: socialImageUrl,
+  ogImageType: 'image/png',
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageAlt: socialImageAlt,
+  twitterCard: 'summary_large_image',
   twitterTitle: pageTitle,
   twitterDescription: pageDescription,
+  twitterImage: socialImageUrl,
+  twitterImageAlt: socialImageAlt,
 })
 
 const activeMarketTab = ref('history')
