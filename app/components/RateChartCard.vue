@@ -36,6 +36,9 @@ const mobileGlowId = `rate-chart-mobile-glow-${chartId}`
 const instructionsId = `rate-chart-instructions-${chartId}`
 const activeIndex = ref<number>()
 const isKeyboardInspection = ref(false)
+const chartPlot = ref<HTMLElement>()
+const isComparing = ref(false)
+const pinnedIndices = ref<number[]>([])
 const observationDateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' })
 const comparisonDateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'UTC' })
 const observationRateFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })
@@ -262,20 +265,29 @@ function formatObservationDate(point: ChartPoint, formatter: Intl.DateTimeFormat
   return Number.isFinite(date) ? formatter.format(date) : point.label
 }
 
+function formatObservationRate(value: number) {
+  const rate = observationRateFormat.format(value)
+  const [base, quote] = props.pair.split('/')
+  return quote ? `1 ${base} = ${rate} ${quote}` : `${props.pair} · ${rate}`
+}
+
+function formatRateChange(from: number, to: number) {
+  const change = (to - from) / from
+  if (from > 0 && Number.isFinite(change)) return observationChangeFormat.format(change)
+}
+
 const activeObservation = computed(() => {
   if (activeIndex.value === undefined) return
   const point = props.points[activeIndex.value]
   if (!point) return
 
   const previous = props.points[activeIndex.value - 1]
-  const change = previous && previous.value > 0 ? (point.value - previous.value) / previous.value : undefined
-  const rate = observationRateFormat.format(point.value)
-  const [base, quote] = props.pair.split('/')
+  const change = previous && formatRateChange(previous.value, point.value)
   return {
     date: formatObservationDate(point, observationDateFormat),
-    rate: quote ? `1 ${base} = ${rate} ${quote}` : `${props.pair} · ${rate}`,
-    comparison: previous && change !== undefined && Number.isFinite(change) ? {
-      change: observationChangeFormat.format(change),
+    rate: formatObservationRate(point.value),
+    comparison: previous && change ? {
+      change,
       label: formatObservationDate(previous, comparisonDateFormat) || 'previous observation',
     } : undefined,
   }
@@ -291,21 +303,48 @@ const inspectionAnnouncement = computed(() => {
 
 const activeDesktopPoint = computed(() => activeIndex.value === undefined ? undefined : coordinatePoints.value[activeIndex.value])
 const activeMobilePoint = computed(() => activeIndex.value === undefined ? undefined : mobileCoordinatePoints.value[activeIndex.value])
+
+type PlotPosition = { x: number, y: number }
+
+function markerPosition(desktop: PlotPosition, mobile: PlotPosition) {
+  return {
+    '--desktop-x': `${desktop.x / chart.width * 100}%`,
+    '--desktop-y': `${desktop.y / chart.height * 100}%`,
+    '--mobile-x': `${mobile.x / mobileChart.width * 100}%`,
+    '--mobile-y': `${mobile.y / mobileChart.height * 100}%`,
+  }
+}
+
 const inspectionPosition = computed(() => {
   const desktop = activeDesktopPoint.value
   const mobile = activeMobilePoint.value
   if (!desktop || !mobile) return
 
-  const desktopY = desktop.y / chart.height
-  const mobileY = mobile.y / mobileChart.height
   return {
-    '--desktop-x': `${desktop.x / chart.width * 100}%`,
-    '--desktop-y': `${desktopY * 100}%`,
-    '--desktop-tooltip-offset': desktopY < 0.3 ? '10px' : 'calc(-100% - 10px)',
-    '--mobile-x': `${mobile.x / mobileChart.width * 100}%`,
-    '--mobile-y': `${mobileY * 100}%`,
-    '--mobile-tooltip-offset': mobileY < 0.3 ? '10px' : 'calc(-100% - 10px)',
+    ...markerPosition(desktop, mobile),
+    '--desktop-tooltip-offset': desktop.y / chart.height < 0.3 ? '10px' : 'calc(-100% - 10px)',
+    '--mobile-tooltip-offset': mobile.y / mobileChart.height < 0.3 ? '10px' : 'calc(-100% - 10px)',
   }
+})
+
+const pinnedObservations = computed(() => pinnedIndices.value.flatMap((index) => {
+  const point = props.points[index]
+  const desktop = coordinatePoints.value[index]
+  const mobile = mobileCoordinatePoints.value[index]
+  if (!point || !desktop || !mobile) return []
+
+  return [{
+    index,
+    date: formatObservationDate(point, comparisonDateFormat),
+    rate: formatObservationRate(point.value),
+    value: point.value,
+    position: markerPosition(desktop, mobile),
+  }]
+}))
+
+const pinnedChange = computed(() => {
+  const [earlier, later] = pinnedObservations.value
+  if (earlier && later) return formatRateChange(earlier.value, later.value)
 })
 
 function clearInspection() {
@@ -313,9 +352,30 @@ function clearInspection() {
   isKeyboardInspection.value = false
 }
 
-watch([() => props.points, () => props.pair], clearInspection)
+function clearPins(event?: MouseEvent) {
+  pinnedIndices.value = []
+  if (event?.detail === 0) chartPlot.value?.focus({ preventScroll: true })
+}
 
-function inspectPointer(event: MouseEvent) {
+watch([() => props.points, () => props.pair], () => {
+  clearInspection()
+  clearPins()
+  isComparing.value = false
+})
+
+function toggleComparison(event: MouseEvent) {
+  isComparing.value = !isComparing.value
+  if (!isComparing.value) clearPins()
+  else if (event.detail === 0) chartPlot.value?.focus({ preventScroll: true })
+}
+
+function pinObservation() {
+  const index = activeIndex.value
+  if (!isComparing.value || index === undefined || pinnedIndices.value.length === 2 || pinnedIndices.value.includes(index)) return
+  pinnedIndices.value = [...pinnedIndices.value, index].sort((left, right) => left - right)
+}
+
+function inspectPointer(event: MouseEvent, pin = false) {
   const hitArea = event.currentTarget as SVGRectElement
   const { left, width } = hitArea.getBoundingClientRect()
   if (!width || !pointFractions.value.length) return
@@ -324,6 +384,7 @@ function inspectPointer(event: MouseEvent) {
   activeIndex.value = pointFractions.value.reduce((nearest, point, index, fractions) =>
     Math.abs(point - fraction) < Math.abs(fractions[nearest]! - fraction) ? index : nearest, 0)
   isKeyboardInspection.value = false
+  if (pin) pinObservation()
 }
 
 function inspectHover(event: PointerEvent) {
@@ -341,6 +402,13 @@ function inspectWithKeyboard(step: number) {
   isKeyboardInspection.value = true
 }
 
+function pinWithKeyboard(event: KeyboardEvent) {
+  if (!isComparing.value) return
+  event.preventDefault()
+  inspectWithKeyboard(0)
+  pinObservation()
+}
+
 function focusChart(event: FocusEvent) {
   if ((event.currentTarget as HTMLElement).matches(':focus-visible')) inspectWithKeyboard(0)
 }
@@ -354,6 +422,7 @@ function focusChart(event: FocusEvent) {
     </header>
 
     <div
+      ref="chartPlot"
       class="rate-chart-card__plot"
       role="group"
       :aria-label="`${pair} rate chart`"
@@ -364,6 +433,8 @@ function focusChart(event: FocusEvent) {
       @blur="clearInspection"
       @keydown.left.prevent="inspectWithKeyboard(-1)"
       @keydown.right.prevent="inspectWithKeyboard(1)"
+      @keydown.enter="pinWithKeyboard"
+      @keydown.space="pinWithKeyboard"
       @keydown.esc="clearInspection"
     >
       <svg
@@ -430,7 +501,7 @@ function focusChart(event: FocusEvent) {
           v-if="points.length"
           class="rate-chart-card__hit-area"
           :x="plot.x" :y="plot.y" :width="plot.width" :height="plot.height"
-          @pointermove="inspectHover" @pointerleave="leavePlot" @click="inspectPointer"
+          @pointermove="inspectHover" @pointerleave="leavePlot" @click="inspectPointer($event, true)"
         />
       </svg>
 
@@ -508,10 +579,17 @@ function focusChart(event: FocusEvent) {
           v-if="points.length"
           class="rate-chart-card__hit-area"
           :x="mobilePlot.x" :y="mobilePlot.y" :width="mobilePlot.width" :height="mobilePlot.height"
-          @pointermove="inspectHover" @pointerleave="leavePlot" @click="inspectPointer"
+          @pointermove="inspectHover" @pointerleave="leavePlot" @click="inspectPointer($event, true)"
         />
       </svg>
 
+      <span
+        v-for="observation in pinnedObservations"
+        :key="observation.index"
+        class="rate-chart-card__marker rate-chart-card__marker--pinned"
+        :style="observation.position"
+        aria-hidden="true"
+      />
       <template v-if="activeObservation">
         <span class="rate-chart-card__marker" aria-hidden="true" />
         <div class="rate-chart-card__tooltip" aria-hidden="true">
@@ -522,9 +600,31 @@ function focusChart(event: FocusEvent) {
           </p>
         </div>
       </template>
-      <p :id="instructionsId" class="sr-only">Use the arrow keys to inspect rates. Press Escape to dismiss the details.</p>
+      <p :id="instructionsId" class="sr-only">
+        Use the arrow keys to inspect rates. Press Escape to dismiss the details.
+        <template v-if="isComparing">Press Enter or Space to pin a point for comparison.</template>
+      </p>
       <p class="sr-only" aria-live="polite">{{ inspectionAnnouncement }}</p>
     </div>
+
+    <footer v-if="points.length > 1" class="rate-chart-card__comparison">
+      <div class="rate-chart-card__comparison-controls">
+        <Button variant="favorite" :pressed="isComparing" @click="toggleComparison">Compare points</Button>
+        <Button v-if="isComparing" variant="clear" :disabled="!pinnedIndices.length" @click="clearPins">Clear pins</Button>
+      </div>
+      <div :class="{ 'mt-2': isComparing }" aria-live="polite" aria-atomic="true">
+        <template v-if="isComparing">
+          <ul v-if="pinnedObservations.length" class="rate-chart-card__pinned-list" aria-label="Pinned observations">
+            <li v-for="observation in pinnedObservations" :key="observation.index">
+              {{ observation.date }} · {{ observation.rate }}
+            </li>
+          </ul>
+          <p v-if="pinnedObservations.length === 0">Click or tap two points, or use the arrow keys and Enter.</p>
+          <p v-else-if="pinnedObservations.length === 1">Pin a second point to compare.</p>
+          <p v-else class="rate-chart-card__comparison-change">{{ pinnedChange === undefined ? 'Percentage change unavailable' : `${pinnedChange} change` }}</p>
+        </template>
+      </div>
+    </footer>
   </article>
 </template>
 
@@ -532,7 +632,8 @@ function focusChart(event: FocusEvent) {
 @reference "~/assets/css/main.css";
 
 .rate-chart-card {
-  @apply grid h-[377px] w-full min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-5 overflow-hidden rounded-2xl border border-fx-neutral-600 bg-fx-neutral-700 p-5 text-fx-neutral-50;
+  --plot-height: 296px;
+  @apply grid w-full min-w-0 grid-rows-[auto_var(--plot-height)] gap-5 overflow-hidden rounded-2xl border border-fx-neutral-600 bg-fx-neutral-700 p-5 text-fx-neutral-50;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
@@ -548,9 +649,13 @@ function focusChart(event: FocusEvent) {
   @apply text-preset-5 m-0 whitespace-nowrap text-fx-neutral-100 uppercase;
 }
 
-.rate-chart-card__plot {
+.rate-chart-card__plot,
+.rate-chart-card__marker--pinned {
   --point-x: var(--desktop-x);
   --point-y: var(--desktop-y);
+}
+
+.rate-chart-card__plot {
   --tooltip-offset: var(--desktop-tooltip-offset);
   @apply relative min-h-0 min-w-0 rounded-sm focus-visible:outline-2 focus-visible:outline-fx-lime-500;
 }
@@ -604,6 +709,10 @@ function focusChart(event: FocusEvent) {
   transform: translate(-50%, -50%);
 }
 
+.rate-chart-card__marker--pinned {
+  @apply size-4 border-fx-lime-500 bg-fx-neutral-900;
+}
+
 .rate-chart-card__tooltip {
   --tooltip-width: min(13rem, 100%);
   @apply pointer-events-none absolute z-10 grid gap-1 rounded-lg border border-fx-neutral-400 bg-fx-neutral-900 px-3 py-2;
@@ -622,9 +731,26 @@ function focusChart(event: FocusEvent) {
   @apply m-0 break-words text-preset-5-medium tabular-nums text-fx-neutral-50;
 }
 
+.rate-chart-card__comparison {
+  @apply text-preset-5 text-fx-neutral-100;
+}
+
+.rate-chart-card__comparison-controls {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.rate-chart-card__pinned-list {
+  @apply m-0 grid list-none gap-1 p-0;
+}
+
+.rate-chart-card__comparison-change {
+  @apply mt-1 text-preset-5-medium text-fx-neutral-50;
+}
+
 @media (max-width: 640px) {
   .rate-chart-card {
-    @apply h-[420px] gap-5 rounded-[20px] p-4;
+    --plot-height: 345px;
+    @apply gap-5 rounded-[20px] p-4;
   }
 
   .rate-chart-card__header {
@@ -635,9 +761,13 @@ function focusChart(event: FocusEvent) {
     @apply whitespace-nowrap text-[12px] tracking-[0.5px];
   }
 
-  .rate-chart-card__plot {
+  .rate-chart-card__plot,
+  .rate-chart-card__marker--pinned {
     --point-x: var(--mobile-x);
     --point-y: var(--mobile-y);
+  }
+
+  .rate-chart-card__plot {
     --tooltip-offset: var(--mobile-tooltip-offset);
   }
 
@@ -663,7 +793,8 @@ function focusChart(event: FocusEvent) {
 
 @media (min-width: 640px) and (max-width: 1024px) {
   .rate-chart-card {
-    @apply h-[504px] gap-6 rounded-[24px] p-6;
+    --plot-height: 410px;
+    @apply gap-6 rounded-[24px] p-6;
   }
 
   .rate-chart-card__pair {
