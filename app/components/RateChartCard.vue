@@ -38,6 +38,12 @@ const activeIndex = ref<number>()
 const isKeyboardInspection = ref(false)
 const observationDateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' })
 const observationRateFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })
+const observationChangeFormat = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  signDisplay: 'exceptZero',
+})
 
 const chart = {
   width: 1040,
@@ -255,13 +261,23 @@ const activeObservation = computed(() => {
   const point = props.points[activeIndex.value]
   if (!point) return
 
+  const previous = props.points[activeIndex.value - 1]
+  const change = previous && previous.value > 0 ? (point.value - previous.value) / previous.value : undefined
   const date = Date.parse(point.date ?? '')
   const rate = observationRateFormat.format(point.value)
   const [base, quote] = props.pair.split('/')
   return {
     date: Number.isFinite(date) ? observationDateFormat.format(date) : point.label,
     rate: quote ? `1 ${base} = ${rate} ${quote}` : `${props.pair} · ${rate}`,
+    change: change !== undefined && Number.isFinite(change) ? observationChangeFormat.format(change) : undefined,
   }
+})
+
+const inspectionAnnouncement = computed(() => {
+  const observation = activeObservation.value
+  if (!isKeyboardInspection.value || !observation) return ''
+  const details = `${observation.date}. ${observation.rate}.`
+  return observation.change ? `${details} ${observation.change} from the previous observation.` : details
 })
 
 const activeDesktopPoint = computed(() => activeIndex.value === undefined ? undefined : coordinatePoints.value[activeIndex.value])
@@ -492,12 +508,11 @@ function focusChart(event: FocusEvent) {
         <div class="rate-chart-card__tooltip" aria-hidden="true">
           <p class="rate-chart-card__observation-date">{{ activeObservation.date }}</p>
           <p class="rate-chart-card__observation-rate">{{ activeObservation.rate }}</p>
+          <p v-if="activeObservation.change" class="rate-chart-card__observation-change">{{ activeObservation.change }} vs. previous</p>
         </div>
       </template>
       <p :id="instructionsId" class="sr-only">Use the arrow keys to inspect rates. Press Escape to dismiss the details.</p>
-      <p class="sr-only" aria-live="polite">
-        {{ isKeyboardInspection && activeObservation ? `${activeObservation.date}. ${activeObservation.rate}.` : '' }}
-      </p>
+      <p class="sr-only" aria-live="polite">{{ inspectionAnnouncement }}</p>
     </div>
   </article>
 </template>
@@ -587,7 +602,8 @@ function focusChart(event: FocusEvent) {
   transform: translateY(var(--tooltip-offset));
 }
 
-.rate-chart-card__observation-date {
+.rate-chart-card__observation-date,
+.rate-chart-card__observation-change {
   @apply m-0 text-preset-5 text-fx-neutral-100;
 }
 
