@@ -37,6 +37,7 @@ const instructionsId = `rate-chart-instructions-${chartId}`
 const activeIndex = ref<number>()
 const isKeyboardInspection = ref(false)
 const observationDateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' })
+const comparisonDateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'UTC' })
 const observationRateFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })
 const observationChangeFormat = new Intl.NumberFormat('en-US', {
   style: 'percent',
@@ -256,6 +257,11 @@ function mobileXTickPosition(index: number) {
   return mobilePlot.x + pointFraction(index) * mobilePlot.width
 }
 
+function formatObservationDate(point: ChartPoint, formatter: Intl.DateTimeFormat) {
+  const date = Date.parse(point.date ?? '')
+  return Number.isFinite(date) ? formatter.format(date) : point.label
+}
+
 const activeObservation = computed(() => {
   if (activeIndex.value === undefined) return
   const point = props.points[activeIndex.value]
@@ -263,13 +269,15 @@ const activeObservation = computed(() => {
 
   const previous = props.points[activeIndex.value - 1]
   const change = previous && previous.value > 0 ? (point.value - previous.value) / previous.value : undefined
-  const date = Date.parse(point.date ?? '')
   const rate = observationRateFormat.format(point.value)
   const [base, quote] = props.pair.split('/')
   return {
-    date: Number.isFinite(date) ? observationDateFormat.format(date) : point.label,
+    date: formatObservationDate(point, observationDateFormat),
     rate: quote ? `1 ${base} = ${rate} ${quote}` : `${props.pair} · ${rate}`,
-    change: change !== undefined && Number.isFinite(change) ? observationChangeFormat.format(change) : undefined,
+    comparison: previous && change !== undefined && Number.isFinite(change) ? {
+      change: observationChangeFormat.format(change),
+      label: formatObservationDate(previous, comparisonDateFormat) || 'previous observation',
+    } : undefined,
   }
 })
 
@@ -277,7 +285,8 @@ const inspectionAnnouncement = computed(() => {
   const observation = activeObservation.value
   if (!isKeyboardInspection.value || !observation) return ''
   const details = `${observation.date}. ${observation.rate}.`
-  return observation.change ? `${details} ${observation.change} from the previous observation.` : details
+  const comparison = observation.comparison
+  return comparison ? `${details} ${comparison.change} compared with ${comparison.label}.` : details
 })
 
 const activeDesktopPoint = computed(() => activeIndex.value === undefined ? undefined : coordinatePoints.value[activeIndex.value])
@@ -508,7 +517,9 @@ function focusChart(event: FocusEvent) {
         <div class="rate-chart-card__tooltip" aria-hidden="true">
           <p class="rate-chart-card__observation-date">{{ activeObservation.date }}</p>
           <p class="rate-chart-card__observation-rate">{{ activeObservation.rate }}</p>
-          <p v-if="activeObservation.change" class="rate-chart-card__observation-change">{{ activeObservation.change }} vs. previous</p>
+          <p v-if="activeObservation.comparison" class="rate-chart-card__observation-change">
+            {{ activeObservation.comparison.change }} vs. {{ activeObservation.comparison.label }}
+          </p>
         </div>
       </template>
       <p :id="instructionsId" class="sr-only">Use the arrow keys to inspect rates. Press Escape to dismiss the details.</p>
@@ -594,7 +605,7 @@ function focusChart(event: FocusEvent) {
 }
 
 .rate-chart-card__tooltip {
-  --tooltip-width: min(12rem, 100%);
+  --tooltip-width: min(13rem, 100%);
   @apply pointer-events-none absolute z-10 grid gap-1 rounded-lg border border-fx-neutral-400 bg-fx-neutral-900 px-3 py-2;
   top: var(--point-y);
   left: clamp(0px, calc(var(--point-x) - var(--tooltip-width) / 2), calc(100% - var(--tooltip-width)));
