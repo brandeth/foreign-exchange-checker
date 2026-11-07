@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 type ChartPoint = {
   label: string
@@ -33,6 +33,11 @@ const fillId = `rate-chart-fill-${chartId}`
 const glowId = `rate-chart-glow-${chartId}`
 const mobileFillId = `rate-chart-mobile-fill-${chartId}`
 const mobileGlowId = `rate-chart-mobile-glow-${chartId}`
+const instructionsId = `rate-chart-instructions-${chartId}`
+const activeIndex = ref<number>()
+const isKeyboardInspection = ref(false)
+const observationDateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' })
+const observationRateFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })
 
 const chart = {
   width: 1040,
@@ -146,6 +151,8 @@ function pointFraction(index: number) {
     : index / Math.max(props.points.length - 1, 1)
 }
 
+const pointFractions = computed(() => props.points.map((_, index) => pointFraction(index)))
+
 function formatTick(value: number) {
   return Math.abs(value) >= 10 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumSignificantDigits: 4 }).format(value) : value.toFixed(4)
 }
@@ -154,7 +161,7 @@ const coordinatePoints = computed(() => {
   const range = Math.max(bounds.value.max - bounds.value.min, 0.0001)
 
   return props.points.map((point, index) => {
-    const x = plot.x + pointFraction(index) * plot.width
+    const x = plot.x + pointFractions.value[index]! * plot.width
     const y = plot.y + ((bounds.value.max - point.value) / range) * plot.height
 
     return {
@@ -210,7 +217,7 @@ const mobileCoordinatePoints = computed(() => {
   const range = Math.max(bounds.value.max - bounds.value.min, 0.0001)
 
   return props.points.map((point, index) => ({
-    x: mobilePlot.x + pointFraction(index) * mobilePlot.width,
+    x: mobilePlot.x + pointFractions.value[index]! * mobilePlot.width,
     y: mobilePlot.y + ((bounds.value.max - point.value) / range) * mobilePlot.height,
   }))
 })
@@ -242,6 +249,76 @@ function mobileYTickPosition(tick: number) {
 function mobileXTickPosition(index: number) {
   return mobilePlot.x + pointFraction(index) * mobilePlot.width
 }
+
+const activeObservation = computed(() => {
+  if (activeIndex.value === undefined) return
+  const point = props.points[activeIndex.value]
+  if (!point) return
+
+  const date = Date.parse(point.date ?? '')
+  const rate = observationRateFormat.format(point.value)
+  const [base, quote] = props.pair.split('/')
+  return {
+    date: Number.isFinite(date) ? observationDateFormat.format(date) : point.label,
+    rate: quote ? `1 ${base} = ${rate} ${quote}` : `${props.pair} · ${rate}`,
+  }
+})
+
+const activeDesktopPoint = computed(() => activeIndex.value === undefined ? undefined : coordinatePoints.value[activeIndex.value])
+const activeMobilePoint = computed(() => activeIndex.value === undefined ? undefined : mobileCoordinatePoints.value[activeIndex.value])
+const inspectionPosition = computed(() => {
+  const desktop = activeDesktopPoint.value
+  const mobile = activeMobilePoint.value
+  if (!desktop || !mobile) return
+
+  const desktopY = desktop.y / chart.height
+  const mobileY = mobile.y / mobileChart.height
+  return {
+    '--desktop-x': `${desktop.x / chart.width * 100}%`,
+    '--desktop-y': `${desktopY * 100}%`,
+    '--desktop-tooltip-offset': desktopY < 0.3 ? '10px' : 'calc(-100% - 10px)',
+    '--mobile-x': `${mobile.x / mobileChart.width * 100}%`,
+    '--mobile-y': `${mobileY * 100}%`,
+    '--mobile-tooltip-offset': mobileY < 0.3 ? '10px' : 'calc(-100% - 10px)',
+  }
+})
+
+function clearInspection() {
+  activeIndex.value = undefined
+  isKeyboardInspection.value = false
+}
+
+watch([() => props.points, () => props.pair], clearInspection)
+
+function inspectPointer(event: MouseEvent) {
+  const hitArea = event.currentTarget as SVGRectElement
+  const { left, width } = hitArea.getBoundingClientRect()
+  if (!width || !pointFractions.value.length) return
+
+  const fraction = (event.clientX - left) / width
+  activeIndex.value = pointFractions.value.reduce((nearest, point, index, fractions) =>
+    Math.abs(point - fraction) < Math.abs(fractions[nearest]! - fraction) ? index : nearest, 0)
+  isKeyboardInspection.value = false
+}
+
+function inspectHover(event: PointerEvent) {
+  if (event.pointerType !== 'touch') inspectPointer(event)
+}
+
+function leavePlot(event: PointerEvent) {
+  if (event.pointerType !== 'touch' && !isKeyboardInspection.value) clearInspection()
+}
+
+function inspectWithKeyboard(step: number) {
+  const lastIndex = props.points.length - 1
+  if (lastIndex < 0) return
+  activeIndex.value = Math.min(lastIndex, Math.max(0, (activeIndex.value ?? lastIndex) + step))
+  isKeyboardInspection.value = true
+}
+
+function focusChart(event: FocusEvent) {
+  if ((event.currentTarget as HTMLElement).matches(':focus-visible')) inspectWithKeyboard(0)
+}
 </script>
 
 <template>
@@ -251,137 +328,177 @@ function mobileXTickPosition(index: number) {
       <p class="rate-chart-card__meta">{{ value }} &middot; {{ timestamp }}</p>
     </header>
 
-    <svg
-      class="rate-chart-card__chart rate-chart-card__chart--desktop"
-      :viewBox="`0 0 ${chart.width} ${chart.height}`"
-      role="img"
-      :aria-label="summary"
-      preserveAspectRatio="none"
+    <div
+      class="rate-chart-card__plot"
+      role="group"
+      :aria-label="`${pair} rate chart`"
+      :aria-describedby="points.length ? instructionsId : undefined"
+      :tabindex="points.length ? 0 : undefined"
+      :style="inspectionPosition"
+      @focus="focusChart"
+      @blur="clearInspection"
+      @keydown.left.prevent="inspectWithKeyboard(-1)"
+      @keydown.right.prevent="inspectWithKeyboard(1)"
+      @keydown.esc="clearInspection"
     >
-      <defs>
-        <linearGradient :id="fillId" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--color-fx-lime-500)" stop-opacity="0.76" />
-          <stop offset="0.55" stop-color="var(--color-fx-lime-500)" stop-opacity="0.2" />
-          <stop offset="1" stop-color="var(--color-fx-lime-500)" stop-opacity="0" />
-        </linearGradient>
-        <filter :id="glowId" x="-8%" y="-18%" width="116%" height="136%">
-          <feGaussianBlur stdDeviation="1.2" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
+      <svg
+        class="rate-chart-card__chart rate-chart-card__chart--desktop"
+        :viewBox="`0 0 ${chart.width} ${chart.height}`"
+        role="img"
+        :aria-label="summary"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient :id="fillId" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="var(--color-fx-lime-500)" stop-opacity="0.76" />
+            <stop offset="0.55" stop-color="var(--color-fx-lime-500)" stop-opacity="0.2" />
+            <stop offset="1" stop-color="var(--color-fx-lime-500)" stop-opacity="0" />
+          </linearGradient>
+          <filter :id="glowId" x="-8%" y="-18%" width="116%" height="136%">
+            <feGaussianBlur stdDeviation="1.2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
 
-      <g class="rate-chart-card__grid">
-        <line
-          v-for="tick in yTicks"
-          :key="tick"
-          :x1="plot.x"
-          :x2="plot.x + plot.width"
-          :y1="yTickPosition(tick)"
-          :y2="yTickPosition(tick)"
+        <g class="rate-chart-card__grid">
+          <line
+            v-for="tick in yTicks"
+            :key="tick"
+            :x1="plot.x"
+            :x2="plot.x + plot.width"
+            :y1="yTickPosition(tick)"
+            :y2="yTickPosition(tick)"
+          />
+        </g>
+
+        <g class="rate-chart-card__y-axis">
+          <text
+            v-for="tick in yTicks"
+            :key="`label-${tick}`"
+            :x="12"
+            :y="yTickPosition(tick) + 4"
+          >
+            {{ formatTick(tick) }}
+          </text>
+        </g>
+
+        <path v-if="areaPath" class="rate-chart-card__area" :d="areaPath" :fill="`url(#${fillId})`" />
+        <path v-if="linePath" class="rate-chart-card__line" :d="linePath" :filter="`url(#${glowId})`" />
+        <circle v-if="!activeDesktopPoint && points.length === 1 && coordinatePoints[0]" :cx="coordinatePoints[0].x" :cy="coordinatePoints[0].y" r="4" fill="var(--color-fx-lime-500)" />
+
+        <g class="rate-chart-card__x-axis">
+          <text
+            v-for="tick in xTicks"
+            :key="`${tick.label}-${tick.index}`"
+            :x="xTickPosition(tick.index)"
+            :y="chart.height - 8"
+            :text-anchor="tick.index === 0 ? 'start' : tick.index === points.length - 1 ? 'end' : 'middle'"
+          >
+            {{ tick.label }}
+          </text>
+        </g>
+        <line v-if="activeDesktopPoint" class="rate-chart-card__guide" :x1="activeDesktopPoint.x" :x2="activeDesktopPoint.x" :y1="plot.y" :y2="plot.y + plot.height" />
+        <rect
+          v-if="points.length"
+          class="rate-chart-card__hit-area"
+          :x="plot.x" :y="plot.y" :width="plot.width" :height="plot.height"
+          @pointermove="inspectHover" @pointerleave="leavePlot" @click="inspectPointer"
         />
-      </g>
+      </svg>
 
-      <g class="rate-chart-card__y-axis">
-        <text
-          v-for="tick in yTicks"
-          :key="`label-${tick}`"
-          :x="12"
-          :y="yTickPosition(tick) + 4"
-        >
-          {{ formatTick(tick) }}
-        </text>
-      </g>
+      <svg
+        class="rate-chart-card__chart rate-chart-card__chart--mobile"
+        :viewBox="`0 0 ${mobileChart.width} ${mobileChart.height}`"
+        role="img"
+        :aria-label="summary"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient :id="mobileFillId" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="var(--color-fx-lime-500)" stop-opacity="0.76" />
+            <stop offset="0.55" stop-color="var(--color-fx-lime-500)" stop-opacity="0.2" />
+            <stop offset="1" stop-color="var(--color-fx-lime-500)" stop-opacity="0" />
+          </linearGradient>
+          <filter :id="mobileGlowId" x="-8%" y="-18%" width="116%" height="136%">
+            <feGaussianBlur stdDeviation="1.2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
 
-      <path v-if="areaPath" class="rate-chart-card__area" :d="areaPath" :fill="`url(#${fillId})`" />
-      <path v-if="linePath" class="rate-chart-card__line" :d="linePath" :filter="`url(#${glowId})`" />
-      <circle v-if="points.length === 1 && coordinatePoints[0]" :cx="coordinatePoints[0].x" :cy="coordinatePoints[0].y" r="4" fill="var(--color-fx-lime-500)" />
+        <g class="rate-chart-card__grid">
+          <line
+            v-for="tick in yTicks"
+            :key="`mobile-grid-${tick}`"
+            :x1="mobilePlot.x"
+            :x2="mobilePlot.x + mobilePlot.width"
+            :y1="mobileYTickPosition(tick)"
+            :y2="mobileYTickPosition(tick)"
+          />
+        </g>
 
-      <g class="rate-chart-card__x-axis">
-        <text
-          v-for="tick in xTicks"
-          :key="`${tick.label}-${tick.index}`"
-          :x="xTickPosition(tick.index)"
-          :y="chart.height - 8"
-          :text-anchor="tick.index === 0 ? 'start' : tick.index === points.length - 1 ? 'end' : 'middle'"
-        >
-          {{ tick.label }}
-        </text>
-      </g>
-    </svg>
+        <g class="rate-chart-card__y-axis">
+          <text
+            v-for="tick in yTicks"
+            :key="`mobile-label-${tick}`"
+            :x="0"
+            :y="mobileYTickPosition(tick) + 4"
+          >
+            {{ formatTick(tick) }}
+          </text>
+        </g>
 
-    <svg
-      class="rate-chart-card__chart rate-chart-card__chart--mobile"
-      :viewBox="`0 0 ${mobileChart.width} ${mobileChart.height}`"
-      role="img"
-      :aria-label="summary"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient :id="mobileFillId" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--color-fx-lime-500)" stop-opacity="0.76" />
-          <stop offset="0.55" stop-color="var(--color-fx-lime-500)" stop-opacity="0.2" />
-          <stop offset="1" stop-color="var(--color-fx-lime-500)" stop-opacity="0" />
-        </linearGradient>
-        <filter :id="mobileGlowId" x="-8%" y="-18%" width="116%" height="136%">
-          <feGaussianBlur stdDeviation="1.2" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      <g class="rate-chart-card__grid">
-        <line
-          v-for="tick in yTicks"
-          :key="`mobile-grid-${tick}`"
-          :x1="mobilePlot.x"
-          :x2="mobilePlot.x + mobilePlot.width"
-          :y1="mobileYTickPosition(tick)"
-          :y2="mobileYTickPosition(tick)"
+        <path
+          v-if="mobileAreaPath"
+          class="rate-chart-card__area"
+          :d="mobileAreaPath"
+          :fill="`url(#${mobileFillId})`"
         />
-      </g>
+        <path
+          v-if="mobileLinePath"
+          class="rate-chart-card__line"
+          :d="mobileLinePath"
+          :filter="`url(#${mobileGlowId})`"
+        />
+        <circle v-if="!activeMobilePoint && points.length === 1 && mobileCoordinatePoints[0]" :cx="mobileCoordinatePoints[0].x" :cy="mobileCoordinatePoints[0].y" r="4" fill="var(--color-fx-lime-500)" />
 
-      <g class="rate-chart-card__y-axis">
-        <text
-          v-for="tick in yTicks"
-          :key="`mobile-label-${tick}`"
-          :x="0"
-          :y="mobileYTickPosition(tick) + 4"
-        >
-          {{ formatTick(tick) }}
-        </text>
-      </g>
+        <g class="rate-chart-card__x-axis">
+          <text
+            v-for="tick in mobileXTicks"
+            :key="`mobile-${tick.label}-${tick.index}`"
+            :x="mobileXTickPosition(tick.index)"
+            :y="mobileChart.height - 7"
+            :text-anchor="tick.index === 0 ? 'start' : tick.index === points.length - 1 ? 'end' : 'middle'"
+          >
+            {{ tick.label }}
+          </text>
+        </g>
+        <line v-if="activeMobilePoint" class="rate-chart-card__guide" :x1="activeMobilePoint.x" :x2="activeMobilePoint.x" :y1="mobilePlot.y" :y2="mobilePlot.y + mobilePlot.height" />
+        <rect
+          v-if="points.length"
+          class="rate-chart-card__hit-area"
+          :x="mobilePlot.x" :y="mobilePlot.y" :width="mobilePlot.width" :height="mobilePlot.height"
+          @pointermove="inspectHover" @pointerleave="leavePlot" @click="inspectPointer"
+        />
+      </svg>
 
-      <path
-        v-if="mobileAreaPath"
-        class="rate-chart-card__area"
-        :d="mobileAreaPath"
-        :fill="`url(#${mobileFillId})`"
-      />
-      <path
-        v-if="mobileLinePath"
-        class="rate-chart-card__line"
-        :d="mobileLinePath"
-        :filter="`url(#${mobileGlowId})`"
-      />
-      <circle v-if="points.length === 1 && mobileCoordinatePoints[0]" :cx="mobileCoordinatePoints[0].x" :cy="mobileCoordinatePoints[0].y" r="4" fill="var(--color-fx-lime-500)" />
-
-      <g class="rate-chart-card__x-axis">
-        <text
-          v-for="tick in mobileXTicks"
-          :key="`mobile-${tick.label}-${tick.index}`"
-          :x="mobileXTickPosition(tick.index)"
-          :y="mobileChart.height - 7"
-          :text-anchor="tick.index === 0 ? 'start' : tick.index === points.length - 1 ? 'end' : 'middle'"
-        >
-          {{ tick.label }}
-        </text>
-      </g>
-    </svg>
+      <template v-if="activeObservation">
+        <span class="rate-chart-card__marker" aria-hidden="true" />
+        <div class="rate-chart-card__tooltip" aria-hidden="true">
+          <p class="rate-chart-card__observation-date">{{ activeObservation.date }}</p>
+          <p class="rate-chart-card__observation-rate">{{ activeObservation.rate }}</p>
+        </div>
+      </template>
+      <p :id="instructionsId" class="sr-only">Use the arrow keys to inspect rates. Press Escape to dismiss the details.</p>
+      <p class="sr-only" aria-live="polite">
+        {{ isKeyboardInspection && activeObservation ? `${activeObservation.date}. ${activeObservation.rate}.` : '' }}
+      </p>
+    </div>
   </article>
 </template>
 
@@ -403,6 +520,13 @@ function mobileXTickPosition(index: number) {
 
 .rate-chart-card__meta {
   @apply text-preset-5 m-0 whitespace-nowrap text-fx-neutral-100 uppercase;
+}
+
+.rate-chart-card__plot {
+  --point-x: var(--desktop-x);
+  --point-y: var(--desktop-y);
+  --tooltip-offset: var(--desktop-tooltip-offset);
+  @apply relative min-h-0 min-w-0 rounded-sm focus-visible:outline-2 focus-visible:outline-fx-lime-500;
 }
 
 .rate-chart-card__chart {
@@ -436,6 +560,41 @@ function mobileXTickPosition(index: number) {
   stroke-width: 2.25;
 }
 
+.rate-chart-card__guide {
+  @apply pointer-events-none stroke-fx-neutral-200;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.rate-chart-card__hit-area {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.rate-chart-card__marker {
+  @apply pointer-events-none absolute size-3 rounded-full border-2 border-fx-neutral-700 bg-fx-lime-500;
+  top: var(--point-y);
+  left: var(--point-x);
+  transform: translate(-50%, -50%);
+}
+
+.rate-chart-card__tooltip {
+  --tooltip-width: min(12rem, 100%);
+  @apply pointer-events-none absolute z-10 grid gap-1 rounded-lg border border-fx-neutral-400 bg-fx-neutral-900 px-3 py-2;
+  top: var(--point-y);
+  left: clamp(0px, calc(var(--point-x) - var(--tooltip-width) / 2), calc(100% - var(--tooltip-width)));
+  width: var(--tooltip-width);
+  transform: translateY(var(--tooltip-offset));
+}
+
+.rate-chart-card__observation-date {
+  @apply m-0 text-preset-5 text-fx-neutral-100;
+}
+
+.rate-chart-card__observation-rate {
+  @apply m-0 break-words text-preset-5-medium tabular-nums text-fx-neutral-50;
+}
+
 @media (max-width: 640px) {
   .rate-chart-card {
     @apply h-[420px] gap-5 rounded-[20px] p-4;
@@ -447,6 +606,12 @@ function mobileXTickPosition(index: number) {
 
   .rate-chart-card__meta {
     @apply whitespace-nowrap text-[12px] tracking-[0.5px];
+  }
+
+  .rate-chart-card__plot {
+    --point-x: var(--mobile-x);
+    --point-y: var(--mobile-y);
+    --tooltip-offset: var(--mobile-tooltip-offset);
   }
 
   .rate-chart-card__chart--desktop {

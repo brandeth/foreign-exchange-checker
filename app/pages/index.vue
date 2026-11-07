@@ -14,7 +14,7 @@ import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
 import type { HistoryRange, RateHistoryResponse } from '#shared/rateHistory'
-import type { ConversionSnapshot, LoggedConversion } from '#shared/conversionLog'
+import { conversionPairLabel, type ConversionSnapshot, type LoggedConversion } from '#shared/conversionLog'
 import { converterCurrencies } from '#shared/currencies'
 import { getPairRate, type ExchangeRatesResponse } from '#shared/exchangeRates'
 
@@ -64,6 +64,7 @@ const favoriteItems = computed<FavoritePair[]>(() => favoritePairs.value.map(({ 
 })))
 
 const logEntries = useState<LoggedConversion[]>('conversion-log', () => [])
+const logPairFilter = ref('')
 const { entries, restore: restoreConversionLogs, add: addConversionLog, remove: removeConversionLog, clear: clearConversionLogs } = useConversionLog(logEntries)
 onMounted(() => restoreConversionLogs())
 const conversionLogs = computed<ConversionLogItem[]>(() => entries.value.map(entry => ({
@@ -72,6 +73,7 @@ const conversionLogs = computed<ConversionLogItem[]>(() => entries.value.map(ent
 })))
 function logConversion(snapshot: ConversionSnapshot) {
   addConversionLog(snapshot)
+  if (logPairFilter.value !== conversionPairLabel(snapshot)) logPairFilter.value = ''
   activeMarketTab.value = 'log'
 }
 
@@ -200,6 +202,7 @@ watch(historyQuery, refreshHistory)
 
         <ConversionLogCard
           v-else-if="activeMarketTab === 'log' && conversionLogs.length"
+          v-model:pair="logPairFilter"
           :items="conversionLogs"
           @remove="removeConversionLog"
           @clear="clearConversionLogs"

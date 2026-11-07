@@ -2,7 +2,7 @@
 import arrowRightIcon from '~/assets/images/arrow-right.svg'
 import deleteFilledIcon from '~/assets/images/delete-filled.svg'
 import deleteIcon from '~/assets/images/delete.svg'
-import { groupConversionsByDate } from '#shared/conversionLog'
+import { conversionPairLabel, groupConversionsByDate } from '#shared/conversionLog'
 
 export type ConversionLogItem = {
   id: string
@@ -29,8 +29,19 @@ const emit = defineEmits<{
   clear: []
 }>()
 
-const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.length} logged`)
-const dateGroups = computed(() => groupConversionsByDate(props.items))
+const selectedPair = defineModel<string>('pair', { default: '' })
+const pairOptions = computed(() => [...new Set(props.items.map(conversionPairLabel))].sort())
+const visibleItems = computed(() => selectedPair.value
+  ? props.items.filter(item => conversionPairLabel(item) === selectedPair.value)
+  : props.items)
+const visibleCountLabel = computed(() => selectedPair.value
+  ? `${visibleItems.value.length} of ${props.items.length} logged`
+  : props.countLabel ?? `${props.items.length} logged`)
+const dateGroups = computed(() => groupConversionsByDate(visibleItems.value))
+
+watch(pairOptions, (options) => {
+  if (selectedPair.value && !options.includes(selectedPair.value)) selectedPair.value = ''
+})
 </script>
 
 <template>
@@ -41,6 +52,7 @@ const dateGroups = computed(() => groupConversionsByDate(props.items))
       <div class="conversion-log-card__summary">
         <p class="conversion-log-card__count" aria-live="polite">{{ visibleCountLabel }}</p>
         <Button
+          v-if="!selectedPair"
           variant="clear"
           :disabled="items.length === 0"
           aria-label="Clear all conversion logs"
@@ -50,6 +62,14 @@ const dateGroups = computed(() => groupConversionsByDate(props.items))
         </Button>
       </div>
     </header>
+
+    <label v-if="pairOptions.length" class="conversion-log-card__filter">
+      <span>Filter by currency pair</span>
+      <select v-model="selectedPair" class="conversion-log-card__select">
+        <option value="">All pairs</option>
+        <option v-for="pair in pairOptions" :key="pair" :value="pair">{{ pair }}</option>
+      </select>
+    </label>
 
     <div v-if="dateGroups.length" class="conversion-log-card__groups">
       <div v-for="group in dateGroups" :key="group.dateLabel ?? 'undated'" class="conversion-log-card__group">
@@ -98,7 +118,7 @@ const dateGroups = computed(() => groupConversionsByDate(props.items))
     </div>
 
     <p v-else class="conversion-log-card__empty" aria-live="polite">
-      No conversions logged yet.
+      {{ selectedPair ? 'No conversions for this currency pair.' : 'No conversions logged yet.' }}
     </p>
   </article>
 </template>
@@ -124,6 +144,15 @@ const dateGroups = computed(() => groupConversionsByDate(props.items))
 
 .conversion-log-card__count {
   @apply m-0 text-preset-6 uppercase text-fx-neutral-200;
+}
+
+.conversion-log-card__filter {
+  @apply flex flex-wrap items-center gap-x-3 gap-y-2 text-preset-5-medium text-fx-neutral-100;
+}
+
+.conversion-log-card__select {
+  @apply min-h-9 cursor-pointer rounded-lg border border-fx-neutral-400 bg-fx-neutral-600 px-3 text-fx-neutral-50 focus-visible:outline-2 focus-visible:outline-fx-lime-500;
+  color-scheme: dark;
 }
 
 .conversion-log-card__groups {
