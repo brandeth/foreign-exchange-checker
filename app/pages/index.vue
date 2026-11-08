@@ -1,12 +1,4 @@
 <script setup lang="ts">
-import audFlag from '~/assets/images/flags/au.webp'
-import bdtFlag from '~/assets/images/flags/bd.webp'
-import cadFlag from '~/assets/images/flags/ca.webp'
-import chfFlag from '~/assets/images/flags/ch.webp'
-import cnyFlag from '~/assets/images/flags/cn.webp'
-import gbpFlag from '~/assets/images/flags/gb.webp'
-import inrFlag from '~/assets/images/flags/in.webp'
-import jpyFlag from '~/assets/images/flags/jp.webp'
 import ComparisonCard from '~/components/ComparisonCard.vue'
 import ConversionLogCard, { type ConversionLogItem } from '~/components/ConversionLogCard.vue'
 import FavoritesCard, { type FavoritePair } from '~/components/FavoritesCard.vue'
@@ -14,6 +6,7 @@ import RateChartCard from '~/components/RateChartCard.vue'
 import RateMetricCard from '~/components/RateMetricCard.vue'
 import TimeRangeSelector from '~/components/TimeRangeSelector.vue'
 import type { HistoryRange, RateHistoryResponse } from '#shared/rateHistory'
+import { buildComparison } from '#shared/comparison'
 import { conversionPairLabel, type ConversionSnapshot, type LoggedConversion } from '#shared/conversionLog'
 import { converterCurrencies } from '#shared/currencies'
 import { getPairRate, type ExchangeRatesResponse } from '#shared/exchangeRates'
@@ -119,20 +112,13 @@ const timeRanges = [
   { label: '5Y', value: '5y' },
 ]
 
-const comparisonItems = [
-  { code: 'GBP', name: 'British Pound', flagSrc: gbpFlag, value: '736.65', rate: '0.7366' },
-  { code: 'JPY', name: 'Japanese Yen', flagSrc: jpyFlag, value: '157,910', rate: '157.91' },
-  { code: 'CHF', name: 'Swiss Franc', flagSrc: chfFlag, value: '909.80', rate: '0.9098' },
-  { code: 'CAD', name: 'Canadian Dollar', flagSrc: cadFlag, value: '1,381.50', rate: '1.3815' },
-  { code: 'AUD', name: 'Australian Dollar', flagSrc: audFlag, value: '1,387.35', rate: '1.3874' },
-  { code: 'INR', name: 'Indian Rupee', flagSrc: inrFlag, value: '94,910.00', rate: '94.910' },
-  { code: 'CNY', name: 'Chinese Yuan', flagSrc: cnyFlag, value: '7,210.00', rate: '7.2100' },
-  { code: 'BDT', name: 'Bangladeshi Taka', flagSrc: bdtFlag, value: '122,920', rate: '122.92' },
-]
-
-const comparisonRows = computed(() => comparisonItems.map(item => ({
-  ...item,
-  favorited: isFavorite({ base: 'USD', quote: item.code }),
+const flagAssets = import.meta.glob<string>('../assets/images/flags/*.webp', { eager: true, query: '?url', import: 'default' })
+const sendState = ref<{ amount: number | null; currency: string }>({ amount: null, currency: 'USD' })
+const comparison = computed(() => buildComparison(sendState.value.amount, sendState.value.currency, latestRates.value?.rates))
+const comparisonRows = computed(() => (comparison.value?.rows ?? []).map(({ flag, ...row }) => ({
+  ...row,
+  flagSrc: flagAssets[`../assets/images/flags/${flag}.webp`] ?? '',
+  favorited: isFavorite({ base: sendState.value.currency, quote: row.code }),
 })))
 const { data: history, loading: historyLoading, error: historyError, points: rateChartPoints, metrics, load: loadHistory } = useRateHistory(
   query => $fetch<RateHistoryResponse>('/api/rate-history', { query }),
@@ -157,6 +143,7 @@ watch(historyQuery, refreshHistory)
         :favorited="isFavorite(selectedPair)"
         @pair-change="updatePair"
         @rates-change="latestRates = $event"
+        @send-change="sendState = $event"
         @toggle-favorite="toggleFavorite(selectedPair)"
         @log-conversion="logConversion"
       />
@@ -198,11 +185,24 @@ watch(historyQuery, refreshHistory)
           />
         </div>
 
-        <ComparisonCard
-          v-else-if="activeMarketTab === 'compare' && comparisonItems.length"
-          :items="comparisonRows"
-          @toggle-favorite="toggleFavorite({ base: 'USD', quote: $event })"
-        />
+        <div v-else-if="activeMarketTab === 'compare' && comparison" class="market-history__compare">
+          <p v-if="latestRates?.stale" role="status" class="m-0 text-preset-5 text-fx-red-500">
+            Could not refresh rates. Showing cached rates, which may be out of date.
+          </p>
+          <ComparisonCard
+            :amount-label="comparison.amountLabel"
+            :pair-count-label="`${comparisonRows.length} pairs`"
+            :items="comparisonRows"
+            @toggle-favorite="toggleFavorite({ base: sendState.currency, quote: $event })"
+          />
+        </div>
+
+        <div v-else-if="activeMarketTab === 'compare' && sendState.amount !== null" class="market-view__empty" role="status">
+          <p class="market-view__empty-title">Rates unavailable</p>
+          <p class="market-view__empty-message">
+            The comparison appears once exchange rates load.
+          </p>
+        </div>
 
         <div v-else-if="activeMarketTab === 'compare'" class="market-view__empty" role="status">
           <p class="market-view__empty-title">No comparison available</p>
@@ -255,6 +255,10 @@ watch(historyQuery, refreshHistory)
 
 .market-history__history {
   @apply grid min-w-0 gap-5;
+}
+
+.market-history__compare {
+  @apply grid min-w-0 gap-3;
 }
 
 .market-history__summary {
