@@ -27,6 +27,7 @@ const {
 const emit = defineEmits<{
   'pair-change': [pair: { base: string; quote: string }]
   'rates-change': [rates: ExchangeRatesResponse | null]
+  'send-change': [send: { amount: number | null; currency: string }]
   'toggle-favorite': []
   'log-conversion': [conversion: ConversionSnapshot]
 }>()
@@ -114,6 +115,9 @@ onMounted(() => {
   void refresh()
 })
 watch(rates, value => emit('rates-change', value))
+watch([sendAmount, amountError, sendCurrency], ([amount, error, currency]) => {
+  emit('send-change', { amount: amount.trim() && !error ? Number(amount) : null, currency })
+}, { immediate: true })
 watch([sendCurrency, receiveCurrency], ([base, quote]) => {
   emit('pair-change', { base, quote })
 }, { immediate: true })

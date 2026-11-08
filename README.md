@@ -9,7 +9,7 @@ The converter fetches daily exchange rates from [Frankfurter v2](https://frankfu
 - Successful responses are cached for one hour per server instance. Concurrent requests share one refresh. The in-memory cache resets on restart and is not shared across instances.
 - If refreshing fails, the endpoint returns the previous successful rates marked as stale. Without cached rates, it returns HTTP 503. The converter offers a retry and retains previously fetched results.
 - Rate dates describe the underlying observations; `fetchedAt` describes when this server retrieved them. Cross-currency conversions show both source dates, which can differ. Missing currencies remain unavailable instead of using sample values.
-- This integration requires a Nuxt server deployment (`npm run build`); static-only hosting cannot serve the API routes. The market ticker and comparison cards still use their existing data.
+- This integration requires a Nuxt server deployment (`npm run build`); static-only hosting cannot serve the API routes. The market ticker still uses sample data.
 
 ## Rate history
 
@@ -19,11 +19,18 @@ The converter fetches daily exchange rates from [Frankfurter v2](https://frankfu
 - The server caches histories for one hour per pair, range, and UTC day, with up to 128 entries per instance. A failed refresh can return that query's cached history with a warning. Switching selections clears the old chart immediately, and late responses cannot replace the current selection.
 - Same-currency pairs show a constant rate of 1 without requesting history from the provider.
 
+## Compare tab
+
+- Compare converts the converter's Send amount from the Send currency into eight currencies (GBP, JPY, CHF, CAD, AUD, INR, CNY, BDT), using the rates already fetched by the converter. No extra requests are made.
+- When the Send currency is one of those eight, USD takes its place so the list still shows eight pairs.
+- An empty or invalid amount shows the empty state. Missing rates show a dash instead of an invented value, and cached fallback rates are flagged above the list.
+- Starring a row pins the pair as Send currency → that row's currency.
+
 ## Conversion log
 
 - Log Conversion saves the currently displayed amounts, currencies, exchange rate, rate dates, and save timestamp, then opens the Log tab. Entries appear newest first; editing the converter does not change saved entries.
 - Logging is disabled while rates are loading or no valid conversion is available. Conversions saved using cached fallback rates are marked in the log.
-- Entries remain available when navigating within the app. They are held in page-session memory and reset on refresh or close; no conversion log is sent to a server or stored on disk.
+- Entries are saved in this browser's local storage, so they remain after a refresh or close. If storage is unavailable, they are kept in memory for the current visit. No conversion log is sent to a server.
 - The log starts empty. Individual entries can be deleted, or Clear All can remove every entry.
 
 Run the tests with Node.js 22.18+ or 24+:
