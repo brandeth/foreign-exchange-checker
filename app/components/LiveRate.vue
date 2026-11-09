@@ -3,12 +3,14 @@ const props = withDefaults(defineProps<{
   pair: string
   rate: string
   change: string
-  direction?: 'up' | 'down'
+  direction?: 'up' | 'down' | 'flat'
 }>(), {
   direction: 'up',
 })
 
-const changeLabel = computed(() => `${props.pair} ${props.rate}, ${props.direction === 'up' ? 'up' : 'down'} ${props.change}`)
+const changeLabel = computed(() => props.direction === 'flat'
+  ? `${props.pair} ${props.rate}, unchanged`
+  : `${props.pair} ${props.rate}, ${props.direction} ${props.change}`)
 </script>
 
 <template>
@@ -16,7 +18,7 @@ const changeLabel = computed(() => `${props.pair} ${props.rate}, ${props.directi
     <span class="live-rate__pair">{{ pair }}</span>
     <span class="live-rate__value">{{ rate }}</span>
     <span class="live-rate__change">
-      <span class="live-rate__icon" aria-hidden="true" />
+      <span v-if="direction !== 'flat'" class="live-rate__icon" aria-hidden="true" />
       <span>{{ change }}</span>
     </span>
   </div>
@@ -47,6 +49,10 @@ const changeLabel = computed(() => `${props.pair} ${props.rate}, ${props.directi
 
 .live-rate--down .live-rate__change {
   @apply text-fx-red-500;
+}
+
+.live-rate--flat .live-rate__change {
+  @apply text-fx-neutral-200;
 }
 
 .live-rate__icon {
