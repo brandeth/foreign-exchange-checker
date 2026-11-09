@@ -10,8 +10,18 @@ const props = withDefaults(defineProps<{
   marquee: true,
 })
 
-const { displayRates } = useLiveMarketRates(computed(() => props.rates))
+const { displayRates, latestDate, loading, error, stale, refresh } = useLiveMarketRates(computed(() => props.rates))
 const rateGroups = computed(() => props.marquee ? [displayRates.value, displayRates.value] : [displayRates.value])
+const statusMessage = computed(() => {
+  if (displayRates.value.length) return ''
+  return loading.value ? 'Loading market rates…' : error.value
+})
+const sourceNote = computed(() => {
+  if (!latestDate.value) return undefined
+  const note = `Daily reference rates from Frankfurter, as of ${latestDate.value}. Changes compare with the previous observation.`
+  return stale.value ? `${note} Could not refresh; showing cached rates.` : note
+})
+onMounted(refresh)
 const {
   container: marketBar,
   track,
@@ -27,6 +37,7 @@ const {
     ref="marketBar"
     class="live-markets"
     aria-label="Live markets"
+    :title="sourceNote"
     @mouseenter="setMarqueeTargetSpeed(0)"
     @mouseleave="setMarqueeTargetSpeed(1)"
   >
@@ -36,7 +47,9 @@ const {
     </div>
 
     <div class="live-markets__viewport">
-      <div ref="track" class="live-markets__track" :style="trackStyle">
+      <p v-if="statusMessage" class="live-markets__status" role="status">{{ statusMessage }}</p>
+      <p v-if="sourceNote" class="sr-only">{{ sourceNote }}</p>
+      <div v-show="displayRates.length" ref="track" class="live-markets__track" :style="trackStyle">
         <div
           v-for="(group, groupIndex) in rateGroups"
           :key="groupIndex"
@@ -74,6 +87,10 @@ const {
 
 .live-markets__viewport {
   @apply min-w-0 flex-1 overflow-hidden;
+}
+
+.live-markets__status {
+  @apply m-0 flex h-full items-center px-5 text-preset-5 text-fx-neutral-200;
 }
 
 .live-markets__track {

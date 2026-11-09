@@ -9,7 +9,13 @@ The converter fetches daily exchange rates from [Frankfurter v2](https://frankfu
 - Successful responses are cached for one hour per server instance. Concurrent requests share one refresh. The in-memory cache resets on restart and is not shared across instances.
 - If refreshing fails, the endpoint returns the previous successful rates marked as stale. Without cached rates, it returns HTTP 503. The converter offers a retry and retains previously fetched results.
 - Rate dates describe the underlying observations; `fetchedAt` describes when this server retrieved them. Cross-currency conversions show both source dates, which can differ. Missing currencies remain unavailable instead of using sample values.
-- This integration requires a Nuxt server deployment (`npm run build`); static-only hosting cannot serve the API routes. The market ticker still uses sample data.
+- This integration requires a Nuxt server deployment (`npm run build`); static-only hosting cannot serve the API routes.
+## Live Markets ticker
+
+- The ticker shows EUR/USD, USD/JPY, GBP/USD, USD/CHF, EUR/GBP, AUD/USD, and USD/CAD from `GET /api/market-rates`.
+- The endpoint makes one USD-based Frankfurter request covering the last 14 days, then derives each pair (including cross pairs such as EUR/GBP) from the two most recent dates on which both currencies were observed. Days missing a currency are skipped rather than filled.
+- The change is the percentage move from the previous observation to the latest one. These are daily reference rates, not intraday quotes; hovering the ticker shows the observation date.
+- Responses are cached for one hour per server instance, and concurrent requests share one refresh. A failed refresh returns the previous rates marked as stale; without cached rates the endpoint returns HTTP 503 and the ticker shows "Market rates are unavailable." instead of sample values.
 
 ## Rate history
 
