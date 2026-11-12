@@ -121,6 +121,11 @@ watch([sendAmount, amountError, sendCurrency], ([amount, error, currency]) => {
 watch([sendCurrency, receiveCurrency], ([base, quote]) => {
   emit('pair-change', { base, quote })
 }, { immediate: true })
+// Amounts use a monospace font, so the character count tells CSS how small
+// the text must be to show every digit instead of cutting it off with "…".
+function amountFitStyle(value: string, extraChars = 0) {
+  return { '--amount-chars': Math.max(value.length + extraChars, 4) }
+}
 const converterId = useId()
 const logMessage = ref('')
 const canLog = computed(() => !loading.value && conversionSnapshot.value !== null)
@@ -141,17 +146,20 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
         <div class="check-rate__field">
           <label :for="`${converterId}-amount`" class="check-rate__label">Send</label>
           <div class="check-rate__value-row">
-            <input
-              :id="`${converterId}-amount`"
-              v-model="sendAmount"
-              type="text"
-              inputmode="decimal"
-              autocomplete="off"
-              spellcheck="false"
-              class="check-rate__amount check-rate__amount-input"
-              :aria-invalid="!!amountError"
-              :aria-describedby="`${converterId}-feedback`"
-            >
+            <div class="check-rate__amount-box">
+              <input
+                :id="`${converterId}-amount`"
+                v-model="sendAmount"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                spellcheck="false"
+                class="check-rate__amount check-rate__amount-input"
+                :style="amountFitStyle(sendAmount, 1)"
+                :aria-invalid="!!amountError"
+                :aria-describedby="`${converterId}-feedback`"
+              >
+            </div>
             <CurrencyDropdown v-model="sendCurrency" aria-label="Send currency" />
           </div>
         </div>
@@ -170,9 +178,14 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
         <div class="check-rate__field">
           <span class="check-rate__label">Receive</span>
           <div class="check-rate__value-row">
-            <output class="check-rate__amount check-rate__amount--receive" aria-label="Receive amount" aria-live="polite">
-              {{ formattedReceiveAmount }}
-            </output>
+            <div class="check-rate__amount-box">
+              <output
+                class="check-rate__amount check-rate__amount--receive"
+                :style="amountFitStyle(formattedReceiveAmount)"
+                aria-label="Receive amount"
+                aria-live="polite"
+              ><template v-for="(group, index) in formattedReceiveAmount.split(',')" :key="index">{{ index ? ',' : '' }}<wbr v-if="index">{{ group }}</template></output>
+            </div>
             <CurrencyDropdown
               :model-value="receiveCurrency"
               aria-label="Receive currency"
@@ -285,12 +298,26 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
   @apply flex min-w-0 items-end justify-between gap-4;
 }
 
+.check-rate__amount-box {
+  @apply min-w-0 flex-1;
+  container-type: inline-size;
+}
+
+/*
+ * Shrink long amounts to fit the box. JetBrains Mono glyphs are 0.6em wide,
+ * so 100cqi / (chars × 0.6) is the largest size that fits on one line. Below
+ * the minimum size, the value wraps rather than hiding digits: the receive
+ * amount only breaks after a thousands separator, so each group stays whole.
+ */
 .check-rate__amount {
-  @apply min-w-0 truncate text-preset-1 text-fx-neutral-50;
+  --amount-max-size: 40px;
+  @apply block w-full text-preset-1 text-fx-neutral-50;
+  font-size: clamp(16px, calc(100cqi / (var(--amount-chars, 4) * 0.6)), var(--amount-max-size));
 }
 
 .check-rate__amount--receive {
   @apply text-fx-lime-500;
+  line-height: 1.15;
 }
 
 .check-rate__amount-input {
@@ -373,7 +400,7 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
   }
 
   .check-rate__amount {
-    @apply text-preset-1-tablet;
+    --amount-max-size: 32px;
   }
 
   .check-rate__value-row {
@@ -452,7 +479,7 @@ watch([sendAmount, sendCurrency, receiveCurrency], () => { logMessage.value = ''
   }
 
   .check-rate__amount {
-    @apply text-preset-1-tablet;
+    --amount-max-size: 32px;
   }
 }
 </style>
