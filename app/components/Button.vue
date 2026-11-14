@@ -133,7 +133,7 @@ withDefaults(defineProps<{
 
   /* Keep icon-only buttons square; the padding above would squeeze the icon. */
   .fx-button--icon-only {
-    @apply size-10 p-0;
+    @apply size-8 p-0;
   }
 
   .fx-button--exchange,
