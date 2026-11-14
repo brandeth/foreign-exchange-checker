@@ -32,6 +32,14 @@ The converter fetches daily exchange rates from [Frankfurter v2](https://frankfu
 - An empty or invalid amount shows the empty state. Missing rates show a dash instead of an invented value, and cached fallback rates are flagged above the list.
 - Starring a row pins the pair as Send currency → that row's currency.
 
+## Favorites tab
+
+- Pinned pairs are saved in this browser's local storage. Selecting a pair sets the converter's Send and Receive currencies, keeps the typed amount, and opens the History tab for that pair. The star removes it.
+- Each pair shows its latest daily rate and the % change from the previous observation, using the same rules as the Live Markets ticker. Days missing either currency are skipped, and a pair with only one observation shows a dash.
+- `GET /api/daily-observations` makes one USD-based Frankfurter request covering the last 14 days for every converter currency, so any pinned pair can be derived without extra requests. Responses are cached for one hour per server instance, and concurrent requests share one refresh. A failed refresh returns the previous observations marked as stale; without them the endpoint returns HTTP 503.
+- If observations are unavailable, favorites fall back to the converter's rates without a change. Cached fallback observations are flagged above the list.
+- The full design is in [docs/interactive-favorites-spec.md](docs/interactive-favorites-spec.md).
+
 ## Conversion log
 
 - Log Conversion saves the currently displayed amounts, currencies, exchange rate, rate dates, and save timestamp, then opens the Log tab. Entries appear newest first; editing the converter does not change saved entries.

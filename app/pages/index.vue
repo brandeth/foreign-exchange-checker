@@ -10,6 +10,7 @@ import { buildComparison } from '#shared/comparison'
 import { conversionPairLabel, type ConversionSnapshot, type LoggedConversion } from '#shared/conversionLog'
 import { converterCurrencies } from '#shared/currencies'
 import { getPairRate, type ExchangeRatesResponse } from '#shared/exchangeRates'
+import { buildPairRate, formatMarketRate } from '#shared/marketRates'
 
 const pageTitle = 'FX Checker | Currency Converter'
 const pageDescription = 'Convert currencies using daily exchange rates from Frankfurter. Explore rate history, compare observations, and log conversions.'
@@ -76,11 +77,28 @@ function toggleFavorite(pair: CurrencyPair) {
   }
 }
 
-const favoriteItems = computed<FavoritePair[]>(() => favoritePairs.value.map(({ base, quote }) => ({
-  fromCurrency: base,
-  toCurrency: quote,
-  exchangeRate: getPairRate(base, quote, latestRates.value?.rates)?.toFixed(4) ?? '—',
-})))
+const { observations, stale: observationsStale, refresh: refreshObservations } = useDailyObservations()
+onMounted(refreshObservations)
+
+// Rate and change come from the same two observations; without them, fall back to the converter rate.
+const favoriteItems = computed<FavoritePair[]>(() => favoritePairs.value.map(({ base, quote }) => {
+  const pairRate = observations.value && buildPairRate(observations.value, base, quote)
+  if (pairRate) {
+    const { rate, change, direction } = formatMarketRate(pairRate)
+    return { fromCurrency: base, toCurrency: quote, exchangeRate: rate, priceChange: change, direction }
+  }
+  return {
+    fromCurrency: base,
+    toCurrency: quote,
+    exchangeRate: getPairRate(base, quote, latestRates.value?.rates)?.toFixed(4) ?? '—',
+  }
+}))
+
+const checkRate = useTemplateRef<{ selectPair: (pair: CurrencyPair) => void }>('checkRate')
+function selectFavorite({ fromCurrency, toCurrency }: FavoritePair) {
+  checkRate.value?.selectPair({ base: fromCurrency, quote: toCurrency })
+  activeMarketTab.value = 'history'
+}
 
 const logEntries = useState<LoggedConversion[]>('conversion-log', () => [])
 const logPairFilter = ref('')
@@ -140,6 +158,7 @@ watch(historyQuery, refreshHistory)
   <main class="home-page min-h-screen bg-fx-neutral-900 px-6 py-9 text-fx-neutral-50">
     <div class="home-page__content mx-auto flex max-w-[1036px] flex-col gap-12">
       <CheckRate
+        ref="checkRate"
         :favorited="isFavorite(selectedPair)"
         @pair-change="updatePair"
         @rates-change="latestRates = $event"
@@ -212,11 +231,16 @@ watch(historyQuery, refreshHistory)
           </p>
         </div>
 
-        <FavoritesCard
-          v-else-if="activeMarketTab === 'favorites' && favoritePairs.length"
-          :items="favoriteItems"
-          @remove="toggleFavorite({ base: $event.fromCurrency, quote: $event.toCurrency })"
-        />
+        <div v-else-if="activeMarketTab === 'favorites' && favoritePairs.length" class="market-history__favorites">
+          <p v-if="observationsStale" role="status" class="m-0 text-preset-5 text-fx-red-500">
+            Could not refresh daily changes. Showing cached rates, which may be out of date.
+          </p>
+          <FavoritesCard
+            :items="favoriteItems"
+            @select="selectFavorite"
+            @remove="toggleFavorite({ base: $event.fromCurrency, quote: $event.toCurrency })"
+          />
+        </div>
 
         <div v-else-if="activeMarketTab === 'favorites'" class="market-view__empty" role="status">
           <p class="market-view__empty-title">No pinned pairs yet</p>
@@ -257,7 +281,8 @@ watch(historyQuery, refreshHistory)
   @apply grid min-w-0 gap-5;
 }
 
-.market-history__compare {
+.market-history__compare,
+.market-history__favorites {
   @apply grid min-w-0 gap-3;
 }
 

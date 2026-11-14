@@ -8,8 +8,10 @@ export type FavoritePair = {
   toCurrency: string
   exchangeRate: string
   priceChange?: string
-  increase?: boolean
+  direction?: 'up' | 'down' | 'flat'
 }
+
+const directionIcons = { up: '▲', down: '▼', flat: '' }
 
 const props = withDefaults(defineProps<{
   title?: string
@@ -21,7 +23,7 @@ const props = withDefaults(defineProps<{
 })
 
 const visibleCountLabel = computed(() => props.countLabel ?? `${props.items.length} favorites`)
-const emit = defineEmits<{ remove: [item: FavoritePair] }>()
+const emit = defineEmits<{ remove: [item: FavoritePair]; select: [item: FavoritePair] }>()
 </script>
 
 <template>
@@ -37,25 +39,32 @@ const emit = defineEmits<{ remove: [item: FavoritePair] }>()
         :key="item.id ?? `${item.fromCurrency}-${item.toCurrency}`"
         class="favorites-card__item"
       >
-        <div class="favorites-card__pair">
-          <span class="favorites-card__currency">{{ item.fromCurrency }}</span>
-          <img class="favorites-card__arrow" :src="arrowRightIcon" alt="">
-          <span class="favorites-card__currency">{{ item.toCurrency }}</span>
-        </div>
+        <button
+          type="button"
+          class="favorites-card__select"
+          :aria-label="`Show ${item.fromCurrency} to ${item.toCurrency} in converter, rate ${item.exchangeRate}${item.priceChange ? `, ${item.priceChange} since previous day` : ''}`"
+          @click="emit('select', item)"
+        >
+          <span class="favorites-card__pair">
+            <span class="favorites-card__currency">{{ item.fromCurrency }}</span>
+            <img class="favorites-card__arrow" :src="arrowRightIcon" alt="">
+            <span class="favorites-card__currency">{{ item.toCurrency }}</span>
+          </span>
 
-        <div class="favorites-card__meta">
-          <div class="favorites-card__rate">
-            <p class="favorites-card__value">{{ item.exchangeRate }}</p>
-            <p
+          <span class="favorites-card__rate">
+            <span class="favorites-card__value">{{ item.exchangeRate }}</span>
+            <span
               v-if="item.priceChange"
               class="favorites-card__change"
-              :class="item.increase ? 'favorites-card__change--increase' : 'favorites-card__change--decrease'"
+              :class="item.direction && `favorites-card__change--${item.direction}`"
             >
-              <span aria-hidden="true">{{ item.increase ? '▲' : '▼' }}</span>
+              <span v-if="item.direction && directionIcons[item.direction]" aria-hidden="true">{{ directionIcons[item.direction] }}</span>
               {{ item.priceChange }}
-            </p>
-          </div>
+            </span>
+          </span>
+        </button>
 
+        <div class="favorites-card__meta">
           <Button
             icon-only
             variant="favorite"
@@ -96,7 +105,15 @@ const emit = defineEmits<{ remove: [item: FavoritePair] }>()
 }
 
 .favorites-card__item {
-  @apply box-border grid h-[59px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-5 rounded-[10px] border border-fx-neutral-500 bg-fx-neutral-600 px-4 py-3;
+  @apply box-border grid h-[59px] shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-5 rounded-[10px] border border-fx-neutral-500 bg-fx-neutral-600 px-4 py-3 transition-colors duration-200 ease-in-out;
+}
+
+.favorites-card__item:has(.favorites-card__select:hover) {
+  @apply border-fx-neutral-300 bg-fx-neutral-500;
+}
+
+.favorites-card__select {
+  @apply flex h-full min-w-0 cursor-pointer items-center justify-between gap-5 rounded-sm border-0 bg-transparent p-0 text-left text-fx-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-fx-lime-500;
 }
 
 .favorites-card__pair,
@@ -133,11 +150,11 @@ const emit = defineEmits<{ remove: [item: FavoritePair] }>()
   @apply text-preset-6 text-fx-neutral-200;
 }
 
-.favorites-card__change--increase {
+.favorites-card__change--up {
   @apply text-fx-green-500;
 }
 
-.favorites-card__change--decrease {
+.favorites-card__change--down {
   @apply text-fx-red-500;
 }
 
@@ -147,11 +164,15 @@ const emit = defineEmits<{ remove: [item: FavoritePair] }>()
 
 @media (max-width: 640px) {
   .favorites-card__item {
-    @apply h-auto min-h-[59px] grid-cols-1 items-start gap-3;
+    @apply h-auto min-h-[59px];
   }
 
-  .favorites-card__meta {
-    @apply w-full justify-between;
+  .favorites-card__select {
+    @apply grid justify-items-start gap-2;
+  }
+
+  .favorites-card__rate {
+    @apply min-w-0 justify-items-start;
   }
 }
 </style>
