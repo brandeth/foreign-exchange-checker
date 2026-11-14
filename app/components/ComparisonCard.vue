@@ -55,8 +55,8 @@ const emit = defineEmits<{ 'toggle-favorite': [currency: string] }>()
 
         <Button
           icon-only
-          variant="favorite"
-          :pressed="item.favorited"
+          :variant="item.favorited ? 'favorite' : 'clear'"
+          :pressed="!!item.favorited"
           :aria-label="`${item.favorited ? 'Remove' : 'Add'} ${item.code} ${item.favorited ? 'from' : 'to'} favorites`"
           class="comparison-card__favorite"
           @click="emit('toggle-favorite', item.code)"
@@ -144,19 +144,33 @@ const emit = defineEmits<{ 'toggle-favorite': [currency: string] }>()
 
 @media (max-width: 640px) {
   .comparison-card {
-    @apply h-auto min-h-[651px];
+    @apply h-auto gap-4 p-4;
+  }
+
+  /* Eyebrow and amount share a line; the pair count sits beneath them. */
+  .comparison-card__header {
+    @apply flex-col gap-2;
+  }
+
+  .comparison-card__count {
+    @apply text-fx-neutral-200;
+  }
+
+  .comparison-card__list {
+    @apply gap-3;
   }
 
   .comparison-card__item {
-    @apply h-auto min-h-[61px] grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2;
+    @apply h-auto min-h-[60px] gap-3 px-3;
   }
 
-  .comparison-card__rate {
-    @apply col-start-1 row-start-2 justify-items-start pl-11;
+  .comparison-card__currency {
+    @apply gap-2.5;
   }
 
-  .comparison-card__favorite {
-    @apply col-start-2 row-span-2 row-start-1;
+  /* Long names wrap under the code instead of being cut off. */
+  .comparison-card__secondary {
+    @apply whitespace-normal;
   }
 }
 </style>
