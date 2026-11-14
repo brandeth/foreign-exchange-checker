@@ -59,6 +59,14 @@ function selectReceiveCurrency(currency: string | undefined) {
   }
 }
 
+// Lets the page load a pinned pair; the amount the user typed is kept.
+function selectPair({ base, quote }: { base: string; quote: string }) {
+  if (!converterCurrencies.includes(base) || !converterCurrencies.includes(quote)) return
+  sendCurrency.value = base
+  if (quote !== receiveCurrency.value) selectReceiveCurrency(quote)
+}
+defineExpose({ selectPair })
+
 async function useCurrentLocation() {
   if (locating.value) return
   const geolocation = navigator.geolocation

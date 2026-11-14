@@ -1,6 +1,6 @@
 # Interactive Favorites spec
 
-Status: Draft · 2026-11-13
+Status: Implemented · 2026-11-14
 
 Clicking a pinned pair loads it into the converter and history chart, and each favorite shows its daily change.
 
@@ -59,14 +59,14 @@ Rate and change both come from the observations, so the number and its % always 
 
 The steps follow dependency order. Steps 1–3 are server and shared code that can be tested before any UI changes.
 
-- [ ] **`shared/marketRates.ts`**: extract `buildPairRate(observations, base, quote)` and make `buildMarketRates` call it. Export a `DailyObservationsResponse` type.
-- [ ] **`server/utils/marketRates.ts`**: make `marketRatesUrl(now, quotes)` and `parseMarketObservations(payload, quotes)` take the quote list. Add `createDailyObservationService` using the existing cache, shared refresh and stale pattern.
-- [ ] **`server/api/daily-observations.get.ts`**: new route with `Cache-Control: no-store`, returning 503 on failure, the same as `market-rates.get.ts`.
-- [ ] **`app/composables/useDailyObservations.ts`**: fetch on mount and expose `observations`, `stale` and `error`.
-- [ ] **`app/components/CheckRate.vue`**: add `defineExpose({ selectPair })`.
-- [ ] **`app/components/FavoritesCard.vue`**: add a `select` emit, wrap the pair and rate in a button, and add hover and focus-visible styles plus an aria-label such as "Show USD to EUR in converter".
-- [ ] **`app/pages/index.vue`**: add the `CheckRate` ref, a `selectFavorite` handler that switches to History, and `favoriteItems` built from observations with a fallback to `latestRates`.
-- [ ] **`README.md`**: add a Favorites section covering the click behavior, how daily change is computed, and caching.
+- [x] **`shared/marketRates.ts`**: extract `buildPairRate(observations, base, quote)` and make `buildMarketRates` call it. Export a `DailyObservationsResponse` type.
+- [x] **`server/utils/marketRates.ts`**: make `marketRatesUrl(now, quotes)` and `parseMarketObservations(payload, quotes)` take the quote list. Add `createDailyObservationService` using the existing cache, shared refresh and stale pattern.
+- [x] **`server/api/daily-observations.get.ts`**: new route with `Cache-Control: no-store`, returning 503 on failure, the same as `market-rates.get.ts`.
+- [x] **`app/composables/useDailyObservations.ts`**: fetch on mount and expose `observations`, `stale` and `error`.
+- [x] **`app/components/CheckRate.vue`**: add `defineExpose({ selectPair })`.
+- [x] **`app/components/FavoritesCard.vue`**: add a `select` emit, wrap the pair and rate in a button, and add hover and focus-visible styles plus an aria-label such as "Show USD to EUR in converter".
+- [x] **`app/pages/index.vue`**: add the `CheckRate` ref, a `selectFavorite` handler that switches to History, and `favoriteItems` built from observations with a fallback to `latestRates`.
+- [x] **`README.md`**: add a Favorites section covering the click behavior, how daily change is computed, and caching.
 
 ## Edge cases
 
