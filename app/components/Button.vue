@@ -131,6 +131,11 @@ withDefaults(defineProps<{
     @apply h-10 px-3 text-preset-5-medium;
   }
 
+  /* Keep icon-only buttons square; the padding above would squeeze the icon. */
+  .fx-button--icon-only {
+    @apply size-10 p-0;
+  }
+
   .fx-button--exchange,
   .fx-button--exchange.fx-button--icon-only {
     @apply size-[54px];
@@ -140,6 +145,10 @@ withDefaults(defineProps<{
 @media (min-width: 640px) and (max-width: 1024px) {
   .fx-button {
     @apply h-11 rounded-[10px] px-4 py-3 text-preset-4;
+  }
+
+  .fx-button--icon-only {
+    @apply size-11 p-0;
   }
 
   .fx-button--exchange,
